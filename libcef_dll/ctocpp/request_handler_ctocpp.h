@@ -38,27 +38,18 @@ class CefRequestHandlerCToCpp
   virtual ~CefRequestHandlerCToCpp() {}
 
   // CefRequestHandler methods
-  virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
-      CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
-      NavType navType, bool isRedirect) OVERRIDE;
   virtual bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-      CefRefPtr<CefRequest> request, CefString& redirectUrl,
-      CefRefPtr<CefStreamReader>& resourceStream,
-      CefRefPtr<CefResponse> response, int loadFlags) OVERRIDE;
+      CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request) OVERRIDE;
+  virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
+      CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefRequest> request) OVERRIDE;
   virtual void OnResourceRedirect(CefRefPtr<CefBrowser> browser,
-      const CefString& old_url, CefString& new_url) OVERRIDE;
-  virtual void OnResourceResponse(CefRefPtr<CefBrowser> browser,
-      const CefString& url, CefRefPtr<CefResponse> response,
-      CefRefPtr<CefContentFilter>& filter) OVERRIDE;
-  virtual bool OnProtocolExecution(CefRefPtr<CefBrowser> browser,
-      const CefString& url, bool& allowOSExecution) OVERRIDE;
-  virtual bool GetDownloadHandler(CefRefPtr<CefBrowser> browser,
-      const CefString& mimeType, const CefString& fileName,
-      int64 contentLength, CefRefPtr<CefDownloadHandler>& handler) OVERRIDE;
-  virtual bool GetAuthCredentials(CefRefPtr<CefBrowser> browser, bool isProxy,
-      const CefString& host, int port, const CefString& realm,
-      const CefString& scheme, CefString& username,
-      CefString& password) OVERRIDE;
+      CefRefPtr<CefFrame> frame, const CefString& old_url,
+      CefString& new_url) OVERRIDE;
+  virtual bool GetAuthCredentials(CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame, bool isProxy, const CefString& host, int port,
+      const CefString& realm, const CefString& scheme,
+      CefRefPtr<CefAuthCallback> callback) OVERRIDE;
 };
 
 #endif  // BUILDING_CEF_SHARED

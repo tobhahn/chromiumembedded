@@ -62,45 +62,36 @@ void CEF_CALLBACK load_handler_on_load_end(struct _cef_load_handler_t* self,
       httpStatusCode);
 }
 
-int CEF_CALLBACK load_handler_on_load_error(struct _cef_load_handler_t* self,
+void CEF_CALLBACK load_handler_on_load_error(struct _cef_load_handler_t* self,
     cef_browser_t* browser, cef_frame_t* frame,
-    enum cef_handler_errorcode_t errorCode, const cef_string_t* failedUrl,
-    cef_string_t* errorText) {
+    enum cef_handler_errorcode_t errorCode, const cef_string_t* errorText,
+    const cef_string_t* failedUrl) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
   if (!self)
-    return 0;
+    return;
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
   if (!browser)
-    return 0;
+    return;
   // Verify param: frame; type: refptr_diff
   DCHECK(frame);
   if (!frame)
-    return 0;
+    return;
   // Verify param: failedUrl; type: string_byref_const
   DCHECK(failedUrl);
   if (!failedUrl)
-    return 0;
-  // Verify param: errorText; type: string_byref
-  DCHECK(errorText);
-  if (!errorText)
-    return 0;
-
-  // Translate param: errorText; type: string_byref
-  CefString errorTextStr(errorText);
+    return;
+  // Unverified params: errorText
 
   // Execute
-  bool _retval = CefLoadHandlerCppToC::Get(self)->OnLoadError(
+  CefLoadHandlerCppToC::Get(self)->OnLoadError(
       CefBrowserCToCpp::Wrap(browser),
       CefFrameCToCpp::Wrap(frame),
       errorCode,
-      CefString(failedUrl),
-      errorTextStr);
-
-  // Return type: bool
-  return _retval;
+      CefString(errorText),
+      CefString(failedUrl));
 }
 
 

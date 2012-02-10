@@ -46,6 +46,29 @@ extern "C" {
 
 
 ///
+// Callback structure used for asynchronous continuation of authentication
+// requests.
+///
+typedef struct _cef_auth_callback_t {
+  ///
+  // Base structure.
+  ///
+  cef_base_t base;
+
+  ///
+  // Continue the authentication request.
+  ///
+  void (CEF_CALLBACK *cont)(struct _cef_auth_callback_t* self,
+      const cef_string_t* username, const cef_string_t* password);
+
+  ///
+  // Cancel the authentication request.
+  ///
+  void (CEF_CALLBACK *cancel)(struct _cef_auth_callback_t* self);
+} cef_auth_callback_t;
+
+
+///
 // Implement this structure to handle events related to browser requests. The
 // functions of this structure will be called on the thread indicated.
 ///
@@ -56,30 +79,23 @@ typedef struct _cef_request_handler_t {
   cef_base_t base;
 
   ///
-  // Called on the UI thread before browser navigation. Return true (1) to
-  // cancel the navigation or false (0) to allow the navigation to proceed.
-  ///
-  int (CEF_CALLBACK *on_before_browse)(struct _cef_request_handler_t* self,
-      struct _cef_browser_t* browser, struct _cef_frame_t* frame,
-      struct _cef_request_t* request, enum cef_handler_navtype_t navType,
-      int isRedirect);
-
-  ///
-  // Called on the IO thread before a resource is loaded.  To allow the resource
-  // to load normally return false (0). To redirect the resource to a new url
-  // populate the |redirectUrl| value and return false (0).  To specify data for
-  // the resource return a CefStream object in |resourceStream|, use the
-  // |response| object to set mime type, HTTP status code and optional header
-  // values, and return false (0). To cancel loading of the resource return true
-  // (1). Any modifications to |request| will be observed.  If the URL in
-  // |request| is changed and |redirectUrl| is also set, the URL in |request|
-  // will be used.
+  // Called on the IO thread before a resource request is loaded. The |request|
+  // object may be modified. To cancel the request return true (1) otherwise
+  // return false (0).
   ///
   int (CEF_CALLBACK *on_before_resource_load)(
       struct _cef_request_handler_t* self, struct _cef_browser_t* browser,
-      struct _cef_request_t* request, cef_string_t* redirectUrl,
-      struct _cef_stream_reader_t** resourceStream,
-      struct _cef_response_t* response, int loadFlags);
+      struct _cef_frame_t* frame, struct _cef_request_t* request);
+
+  ///
+  // Called on the IO thread before a resource is loaded. To allow the resource
+  // to load normally return NULL. To specify a handler for the resource return
+  // a cef_resource_handler_t object. The |request| object should not be
+  // modified in this callback.
+  ///
+  struct _cef_resource_handler_t* (CEF_CALLBACK *get_resource_handler)(
+      struct _cef_request_handler_t* self, struct _cef_browser_t* browser,
+      struct _cef_frame_t* frame, struct _cef_request_t* request);
 
   ///
   // Called on the IO thread when a resource load is redirected. The |old_url|
@@ -87,58 +103,21 @@ typedef struct _cef_request_handler_t {
   // the new URL and can be changed if desired.
   ///
   void (CEF_CALLBACK *on_resource_redirect)(struct _cef_request_handler_t* self,
-      struct _cef_browser_t* browser, const cef_string_t* old_url,
-      cef_string_t* new_url);
-
-  ///
-  // Called on the UI thread after a response to the resource request is
-  // received. Set |filter| if response content needs to be monitored and/or
-  // modified as it arrives.
-  ///
-  void (CEF_CALLBACK *on_resource_response)(struct _cef_request_handler_t* self,
-      struct _cef_browser_t* browser, const cef_string_t* url,
-      struct _cef_response_t* response,
-      struct _cef_content_filter_t** filter);
-
-  ///
-  // Called on the IO thread to handle requests for URLs with an unknown
-  // protocol component. Return true (1) to indicate that the request should
-  // succeed because it was handled externally. Set |allowOSExecution| to true
-  // (1) and return false (0) to attempt execution via the registered OS
-  // protocol handler, if any. If false (0) is returned and either
-  // |allow_os_execution| is false (0) or OS protocol handler execution fails
-  // then the request will fail with an error condition. SECURITY WARNING: YOU
-  // SHOULD USE THIS METHOD TO ENFORCE RESTRICTIONS BASED ON SCHEME, HOST OR
-  // OTHER URL ANALYSIS BEFORE ALLOWING OS EXECUTION.
-  ///
-  int (CEF_CALLBACK *on_protocol_execution)(struct _cef_request_handler_t* self,
-      struct _cef_browser_t* browser, const cef_string_t* url,
-      int* allowOSExecution);
-
-  ///
-  // Called on the UI thread when a server indicates via the 'Content-
-  // Disposition' header that a response represents a file to download.
-  // |mimeType| is the mime type for the download, |fileName| is the suggested
-  // target file name and |contentLength| is either the value of the 'Content-
-  // Size' header or -1 if no size was provided. Set |handler| to the
-  // cef_download_handler_t instance that will recieve the file contents. Return
-  // true (1) to download the file or false (0) to cancel the file download.
-  ///
-  int (CEF_CALLBACK *get_download_handler)(struct _cef_request_handler_t* self,
-      struct _cef_browser_t* browser, const cef_string_t* mimeType,
-      const cef_string_t* fileName, int64 contentLength,
-      struct _cef_download_handler_t** handler);
+      struct _cef_browser_t* browser, struct _cef_frame_t* frame,
+      const cef_string_t* old_url, cef_string_t* new_url);
 
   ///
   // Called on the IO thread when the browser needs credentials from the user.
   // |isProxy| indicates whether the host is a proxy server. |host| contains the
-  // hostname and port number. Set |username| and |password| and return true (1)
-  // to handle the request. Return false (0) to cancel the request.
+  // hostname and |port| contains the port number. Return true (1) to continue
+  // the request and call cef_auth_callback_t::Complete() when the
+  // authentication information is available. Return false (0) to cancel the
+  // request.
   ///
   int (CEF_CALLBACK *get_auth_credentials)(struct _cef_request_handler_t* self,
-      struct _cef_browser_t* browser, int isProxy, const cef_string_t* host,
-      int port, const cef_string_t* realm, const cef_string_t* scheme,
-      cef_string_t* username, cef_string_t* password);
+      struct _cef_browser_t* browser, struct _cef_frame_t* frame, int isProxy,
+      const cef_string_t* host, int port, const cef_string_t* realm,
+      const cef_string_t* scheme, struct _cef_auth_callback_t* callback);
 } cef_request_handler_t;
 
 

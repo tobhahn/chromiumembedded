@@ -2,6 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
+#include "include/cef_callback.h"
 #include "include/cef_scheme.h"
 #include "tests/unittests/test_handler.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -36,7 +37,8 @@ static NavListItem kNavList[] = {
   {NA_FORWARD, kNav2, true, false},  //   .       X
   {NA_LOAD, kNav3, true, false},     //   .       .       X
   {NA_BACK, kNav2, true, true},      //   .       X       .
-  {NA_CLEAR, kNav2, false, false},   //           X
+  // TODO(cef): Enable once ClearHistory is implemented
+  // {NA_CLEAR, kNav2, false, false},   //           X
 };
 
 #define NAV_LIST_SIZE() (sizeof(kNavList) / sizeof(NavListItem))
@@ -92,34 +94,27 @@ class HistoryNavTestHandler : public TestHandler {
     RunNav(browser);
   }
 
-  virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
-                              CefRefPtr<CefFrame> frame,
-                              CefRefPtr<CefRequest> request,
-                              NavType navType,
-                              bool isRedirect) OVERRIDE {
+  virtual bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
+                                    CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefRequest> request) OVERRIDE {
     const NavListItem& item = kNavList[nav_];
 
-    got_before_browse_[nav_].yes();
+    got_before_resource_load_[nav_].yes();
 
     std::string url = request->GetURL();
     if (url == item.target)
       got_correct_target_[nav_].yes();
 
-    if (((item.action == NA_BACK || item.action == NA_FORWARD) &&
-         navType == NAVTYPE_BACKFORWARD) ||
-        (item.action == NA_LOAD && navType == NAVTYPE_OTHER)) {
-      got_correct_nav_type_[nav_].yes();
-    }
-
     return false;
   }
 
-  virtual void OnNavStateChange(CefRefPtr<CefBrowser> browser,
-                                bool canGoBack,
-                                bool canGoForward) OVERRIDE {
+  virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                    bool isLoading,
+                                    bool canGoBack,
+                                    bool canGoForward) OVERRIDE {
     const NavListItem& item = kNavList[nav_];
 
-    got_nav_state_change_[nav_].yes();
+    got_loading_state_change_[nav_].yes();
 
     if (item.can_go_back == canGoBack)
       got_correct_can_go_back_[nav_].yes();
@@ -148,10 +143,9 @@ class HistoryNavTestHandler : public TestHandler {
 
   int nav_;
 
-  TrackCallback got_before_browse_[NAV_LIST_SIZE()];
+  TrackCallback got_before_resource_load_[NAV_LIST_SIZE()];
   TrackCallback got_correct_target_[NAV_LIST_SIZE()];
-  TrackCallback got_correct_nav_type_[NAV_LIST_SIZE()];
-  TrackCallback got_nav_state_change_[NAV_LIST_SIZE()];
+  TrackCallback got_loading_state_change_[NAV_LIST_SIZE()];
   TrackCallback got_correct_can_go_back_[NAV_LIST_SIZE()];
   TrackCallback got_correct_can_go_forward_[NAV_LIST_SIZE()];
   TrackCallback got_load_end_[NAV_LIST_SIZE()];
@@ -169,22 +163,13 @@ TEST(NavigationTest, History) {
 
   for (size_t i = 0; i < NAV_LIST_SIZE(); ++i) {
     if (kNavList[i].action != NA_CLEAR) {
-      ASSERT_TRUE(handler->got_before_browse_[i]) << "i = " << i;
+      ASSERT_TRUE(handler->got_before_resource_load_[i]) << "i = " << i;
       ASSERT_TRUE(handler->got_correct_target_[i]) << "i = " << i;
-      ASSERT_TRUE(handler->got_correct_nav_type_[i]) << "i = " << i;
     }
 
-    if (i == 0 || kNavList[i].can_go_back != kNavList[i-1].can_go_back ||
-        kNavList[i].can_go_forward != kNavList[i-1].can_go_forward) {
-      // Back/forward state has changed from one navigation to the next.
-      ASSERT_TRUE(handler->got_nav_state_change_[i]) << "i = " << i;
-      ASSERT_TRUE(handler->got_correct_can_go_back_[i]) << "i = " << i;
-      ASSERT_TRUE(handler->got_correct_can_go_forward_[i]) << "i = " << i;
-    } else {
-      ASSERT_FALSE(handler->got_nav_state_change_[i]) << "i = " << i;
-      ASSERT_FALSE(handler->got_correct_can_go_back_[i]) << "i = " << i;
-      ASSERT_FALSE(handler->got_correct_can_go_forward_[i]) << "i = " << i;
-    }
+    ASSERT_TRUE(handler->got_loading_state_change_[i]) << "i = " << i;
+    ASSERT_TRUE(handler->got_correct_can_go_back_[i]) << "i = " << i;
+    ASSERT_TRUE(handler->got_correct_can_go_forward_[i]) << "i = " << i;
 
     if (kNavList[i].action != NA_CLEAR) {
       ASSERT_TRUE(handler->got_load_end_[i]) << "i = " << i;
@@ -221,15 +206,13 @@ class FrameNameIdentNavTestHandler : public TestHandler {
     CreateBrowser(kNav1);
   }
 
-  virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
-                              CefRefPtr<CefFrame> frame,
-                              CefRefPtr<CefRequest> request,
-                              NavType navType,
-                              bool isRedirect) OVERRIDE {
-    std::string url = request->GetURL();
+  virtual bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
+                                    CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefRequest> request) OVERRIDE {
     std::string name = frame->GetName();
     CefRefPtr<CefFrame> parent = frame->GetParent();
 
+    std::string url = request->GetURL();
     if (url == kNav1) {
       frame1_ident_ = frame->GetIdentifier();
       if (name == "")
@@ -333,13 +316,12 @@ bool g_got_nav3_request = false;
 bool g_got_nav4_request = false;
 bool g_got_invalid_request = false;
 
-class RedirectSchemeHandler : public CefSchemeHandler {
+class RedirectSchemeHandler : public CefResourceHandler {
  public:
   RedirectSchemeHandler() : offset_(0), status_(0) {}
 
   virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
-                              CefRefPtr<CefSchemeHandlerCallback> callback)
-                              OVERRIDE {
+                              CefRefPtr<CefCallback> callback) OVERRIDE {
     EXPECT_TRUE(CefCurrentlyOn(TID_IO));
 
     std::string url = request->GetURL();
@@ -350,7 +332,7 @@ class RedirectSchemeHandler : public CefSchemeHandler {
       location_ = kNav2;
       content_ = "<html><body>Redirected Nav1</body></html>";
     } else if (url == kNav3) {
-      // Rdirect using redirectUrl
+      // Redirect using redirectUrl
       g_got_nav3_request = true;
       status_ = -1;
       location_ = kNav4;
@@ -362,7 +344,7 @@ class RedirectSchemeHandler : public CefSchemeHandler {
     }
 
     if (status_ != 0) {
-      callback->HeadersAvailable();
+      callback->Continue();
       return true;
     } else {
       g_got_invalid_request = true;
@@ -403,8 +385,7 @@ class RedirectSchemeHandler : public CefSchemeHandler {
   virtual bool ReadResponse(void* data_out,
                             int bytes_to_read,
                             int& bytes_read,
-                            CefRefPtr<CefSchemeHandlerCallback> callback)
-                            OVERRIDE {
+                            CefRefPtr<CefCallback> callback) OVERRIDE {
     EXPECT_TRUE(CefCurrentlyOn(TID_IO));
 
     size_t size = content_.size();
@@ -434,10 +415,11 @@ class RedirectSchemeHandlerFactory : public CefSchemeHandlerFactory {
  public:
   RedirectSchemeHandlerFactory() {}
 
-  virtual CefRefPtr<CefSchemeHandler> Create(CefRefPtr<CefBrowser> browser,
-                                             const CefString& scheme_name,
-                                             CefRefPtr<CefRequest> request)
-                                             OVERRIDE {
+  virtual CefRefPtr<CefResourceHandler> Create(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      const CefString& scheme_name,
+      CefRefPtr<CefRequest> request) OVERRIDE {
     EXPECT_TRUE(CefCurrentlyOn(TID_IO));
     return new RedirectSchemeHandler();
   }
@@ -454,38 +436,18 @@ class RedirectTestHandler : public TestHandler {
     CreateBrowser(kNav1);
   }
 
-  virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
-                              CefRefPtr<CefFrame> frame,
-                              CefRefPtr<CefRequest> request,
-                              NavType navType,
-                              bool isRedirect) OVERRIDE {
-    // Should be called for each URL that is actually loaded.
-    std::string url = request->GetURL();
-
-    if (url == kNav1) {
-      got_nav1_before_browse_.yes();
-    } else if (url == kNav3) {
-      got_nav3_before_browse_.yes();
-    } else if (url == kNav4) {
-      got_nav4_before_browse_.yes();
-    } else {
-      got_invalid_before_browse_.yes();
-    }
-
-    return false;
-  }
-
   virtual bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-                                    CefRefPtr<CefRequest> request,
-                                    CefString& redirectUrl,
-                                    CefRefPtr<CefStreamReader>& resourceStream,
-                                    CefRefPtr<CefResponse> response,
-                                    int loadFlags) OVERRIDE {
-    // Should only be called for the first URL.
+                                    CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefRequest> request) OVERRIDE {
+    // Should be called for all but the second URL.
     std::string url = request->GetURL();
 
     if (url == kNav1) {
       got_nav1_before_resource_load_.yes();
+    } else if (url == kNav3) {
+      got_nav3_before_resource_load_.yes();
+    } else if (url == kNav4) {
+      got_nav4_before_resource_load_.yes();
     } else {
       got_invalid_before_resource_load_.yes();
     }
@@ -494,6 +456,7 @@ class RedirectTestHandler : public TestHandler {
   }
 
   virtual void OnResourceRedirect(CefRefPtr<CefBrowser> browser,
+                                  CefRefPtr<CefFrame> frame,
                                   const CefString& old_url,
                                   CefString& new_url) OVERRIDE {
     // Should be called for each redirected URL.
@@ -541,11 +504,9 @@ class RedirectTestHandler : public TestHandler {
     }
   }
 
-  TrackCallback got_nav1_before_browse_;
-  TrackCallback got_nav3_before_browse_;
-  TrackCallback got_nav4_before_browse_;
-  TrackCallback got_invalid_before_browse_;
   TrackCallback got_nav1_before_resource_load_;
+  TrackCallback got_nav3_before_resource_load_;
+  TrackCallback got_nav4_before_resource_load_;
   TrackCallback got_invalid_before_resource_load_;
   TrackCallback got_nav4_load_start_;
   TrackCallback got_invalid_load_start_;
@@ -572,11 +533,9 @@ TEST(NavigationTest, Redirect) {
   CefClearSchemeHandlerFactories();
   WaitForIOThread();
 
-  ASSERT_TRUE(handler->got_nav1_before_browse_);
-  ASSERT_TRUE(handler->got_nav3_before_browse_);
-  ASSERT_TRUE(handler->got_nav4_before_browse_);
-  ASSERT_FALSE(handler->got_invalid_before_browse_);
   ASSERT_TRUE(handler->got_nav1_before_resource_load_);
+  ASSERT_TRUE(handler->got_nav3_before_resource_load_);
+  ASSERT_TRUE(handler->got_nav4_before_resource_load_);
   ASSERT_FALSE(handler->got_invalid_before_resource_load_);
   ASSERT_TRUE(handler->got_nav4_load_start_);
   ASSERT_FALSE(handler->got_invalid_load_start_);

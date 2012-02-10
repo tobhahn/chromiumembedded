@@ -12,58 +12,12 @@
 #include "include/cef_command_line.h"
 #include "include/cef_frame.h"
 #include "include/cef_runnable.h"
-#include "include/cef_web_urlrequest.h"
 #include "cefclient/cefclient_switches.h"
 #include "cefclient/client_handler.h"
-#include "cefclient/binding_test.h"
 #include "cefclient/string_util.h"
 #include "cefclient/util.h"
 
 namespace {
-
-void UIT_InvokeScript(CefRefPtr<CefBrowser> browser) {
-  REQUIRE_UI_THREAD();
-
-  CefRefPtr<CefFrame> frame = browser->GetMainFrame();
-  CefRefPtr<CefV8Context> v8Context = frame->GetV8Context();
-  CefString url = frame->GetURL();
-
-  if (!v8Context.get()) {
-    frame->ExecuteJavaScript("alert('Failed to get V8 context!');", url, 0);
-  } else if (v8Context->Enter()) {
-    CefRefPtr<CefV8Value> globalObj = v8Context->GetGlobal();
-    CefRefPtr<CefV8Value> evalFunc = globalObj->GetValue("eval");
-
-    CefRefPtr<CefV8Value> arg0 = CefV8Value::CreateString("1+2");
-
-    CefV8ValueList args;
-    args.push_back(arg0);
-
-    CefRefPtr<CefV8Value> retVal;
-    CefRefPtr<CefV8Exception> exception;
-    if (evalFunc->ExecuteFunctionWithContext(v8Context, globalObj, args, retVal,
-                                             exception, false)) {
-      if (retVal.get()) {
-        frame->ExecuteJavaScript(
-            std::string("alert('InvokeScript returns ") +
-            retVal->GetStringValue().ToString() + "!');",
-            url, 0);
-      } else {
-        frame->ExecuteJavaScript(
-            std::string("alert('InvokeScript returns exception: ") +
-            exception->GetMessage().ToString() + "!');",
-            url, 0);
-      }
-    } else {
-      frame->ExecuteJavaScript("alert('Failed to execute function!');", url, 0);
-    }
-
-    v8Context->Exit();
-  } else {
-    frame->ExecuteJavaScript("alert('Failed to enter into V8 context!');",
-        url, 0);
-  }
-}
 
 // Return the int representation of the specified string.
 int GetIntValue(const CefString& str) {
@@ -73,7 +27,6 @@ int GetIntValue(const CefString& str) {
   std::string stdStr = str;
   return atoi(stdStr.c_str());
 }
-
 
 // ClientApp implementation.
 class ClientApp : public CefApp,
@@ -311,8 +264,8 @@ void AppGetBrowserSettings(CefBrowserSettings& settings) {
       g_command_line->HasSwitch(cefclient::kApplicationCacheDisabled);
   settings.webgl_disabled =
       g_command_line->HasSwitch(cefclient::kWebglDisabled);
-  settings.accelerated_compositing_enabled =
-      g_command_line->HasSwitch(cefclient::kAcceleratedCompositingEnabled);
+  settings.accelerated_compositing_disabled =
+      g_command_line->HasSwitch(cefclient::kAcceleratedCompositingDisabled);
   settings.threaded_compositing_enabled =
       g_command_line->HasSwitch(cefclient::kThreadedCompositingEnabled);
   settings.accelerated_layers_disabled =
@@ -321,10 +274,10 @@ void AppGetBrowserSettings(CefBrowserSettings& settings) {
       g_command_line->HasSwitch(cefclient::kAcceleratedVideoDisabled);
   settings.accelerated_2d_canvas_disabled =
       g_command_line->HasSwitch(cefclient::kAcceledated2dCanvasDisabled);
-  settings.accelerated_painting_disabled =
-      g_command_line->HasSwitch(cefclient::kAcceleratedPaintingDisabled);
-  settings.accelerated_filters_disabled =
-      g_command_line->HasSwitch(cefclient::kAcceleratedFiltersDisabled);
+  settings.accelerated_painting_enabled =
+      g_command_line->HasSwitch(cefclient::kAcceleratedPaintingEnabled);
+  settings.accelerated_filters_enabled =
+      g_command_line->HasSwitch(cefclient::kAcceleratedFiltersEnabled);
   settings.accelerated_plugins_disabled =
       g_command_line->HasSwitch(cefclient::kAcceleratedPluginsDisabled);
   settings.developer_tools_disabled =
@@ -333,35 +286,42 @@ void AppGetBrowserSettings(CefBrowserSettings& settings) {
       g_command_line->HasSwitch(cefclient::kFullscreenEnabled);
 }
 
-static void ExecuteGetSource(CefRefPtr<CefFrame> frame) {
-  // Retrieve the current page source and display.
-  std::string source = frame->GetSource();
-  source = StringReplace(source, "<", "&lt;");
-  source = StringReplace(source, ">", "&gt;");
-  std::stringstream ss;
-  ss << "<html><body>Source:<pre>" << source << "</pre></body></html>";
-  frame->LoadString(ss.str(), "http://tests/getsource");
-}
-
 void RunGetSourceTest(CefRefPtr<CefBrowser> browser) {
-  // Execute the GetSource() call on the UI thread.
-  CefPostTask(TID_UI,
-      NewCefRunnableFunction(&ExecuteGetSource, browser->GetMainFrame()));
-}
+  class Visitor : public CefStringVisitor {
+   public:
+    Visitor(CefRefPtr<CefBrowser> browser) : browser_(browser) {}
+    virtual void Visit(const CefString& string) OVERRIDE {
+      std::string source = StringReplace(string, "<", "&lt;");
+      source = StringReplace(source, ">", "&gt;");
+      std::stringstream ss;
+      ss << "<html><body>Source:<pre>" << source << "</pre></body></html>";
+      browser_->GetMainFrame()->LoadString(ss.str(), "http://tests/getsource");
+    }
+   private:
+    CefRefPtr<CefBrowser> browser_;
+    IMPLEMENT_REFCOUNTING(Visitor);
+  };
 
-static void ExecuteGetText(CefRefPtr<CefFrame> frame) {
-  std::string text = frame->GetText();
-  text = StringReplace(text, "<", "&lt;");
-  text = StringReplace(text, ">", "&gt;");
-  std::stringstream ss;
-  ss << "<html><body>Text:<pre>" << text << "</pre></body></html>";
-  frame->LoadString(ss.str(), "http://tests/gettext");
+  browser->GetMainFrame()->GetSource(new Visitor(browser));
 }
 
 void RunGetTextTest(CefRefPtr<CefBrowser> browser) {
-  // Execute the GetText() call on the UI thread.
-  CefPostTask(TID_UI,
-      NewCefRunnableFunction(&ExecuteGetText, browser->GetMainFrame()));
+  class Visitor : public CefStringVisitor {
+   public:
+    Visitor(CefRefPtr<CefBrowser> browser) : browser_(browser) {}
+    virtual void Visit(const CefString& string) OVERRIDE {
+      std::string text = StringReplace(string, "<", "&lt;");
+      text = StringReplace(text, ">", "&gt;");
+      std::stringstream ss;
+      ss << "<html><body>Text:<pre>" << text << "</pre></body></html>";
+      browser_->GetMainFrame()->LoadString(ss.str(), "http://tests/gettext");
+    }
+   private:
+    CefRefPtr<CefBrowser> browser_;
+    IMPLEMENT_REFCOUNTING(Visitor);
+  };
+
+  browser->GetMainFrame()->GetText(new Visitor(browser));
 }
 
 void RunRequestTest(CefRefPtr<CefBrowser> browser) {
@@ -394,15 +354,6 @@ void RunRequestTest(CefRefPtr<CefBrowser> browser) {
 void RunJavaScriptExecuteTest(CefRefPtr<CefBrowser> browser) {
   browser->GetMainFrame()->ExecuteJavaScript(
       "alert('JavaScript execute works!');", "about:blank", 0);
-}
-
-void RunJavaScriptInvokeTest(CefRefPtr<CefBrowser> browser) {
-  if (CefCurrentlyOn(TID_UI)) {
-    UIT_InvokeScript(browser);
-  } else {
-    // Execute on the UI thread.
-    CefPostTask(TID_UI, NewCefRunnableFunction(&UIT_InvokeScript, browser));
-  }
 }
 
 void RunPopupTest(CefRefPtr<CefBrowser> browser) {
@@ -438,158 +389,6 @@ void RunXMLHTTPRequestTest(CefRefPtr<CefBrowser> browser) {
   browser->GetMainFrame()->LoadURL("http://tests/xmlhttprequest");
 }
 
-void RunWebURLRequestTest(CefRefPtr<CefBrowser> browser) {
-  class RequestClient : public CefWebURLRequestClient {
-   public:
-    explicit RequestClient(CefRefPtr<CefBrowser> browser) : browser_(browser) {}
-
-    virtual void OnStateChange(CefRefPtr<CefWebURLRequest> requester,
-                               RequestState state) {
-      REQUIRE_UI_THREAD();
-      if (state == WUR_STATE_DONE) {
-        buffer_ = StringReplace(buffer_, "<", "&lt;");
-        buffer_ = StringReplace(buffer_, ">", "&gt;");
-        std::stringstream ss;
-        ss << "<html><body>Source:<pre>" << buffer_ << "</pre></body></html>";
-
-        browser_->GetMainFrame()->LoadString(ss.str(),
-            "http://tests/weburlrequest");
-      }
-    }
-
-    virtual void OnRedirect(CefRefPtr<CefWebURLRequest> requester,
-                            CefRefPtr<CefRequest> request,
-                            CefRefPtr<CefResponse> response) {
-      REQUIRE_UI_THREAD();
-    }
-
-    virtual void OnHeadersReceived(CefRefPtr<CefWebURLRequest> requester,
-                                   CefRefPtr<CefResponse> response) {
-      REQUIRE_UI_THREAD();
-    }
-
-    virtual void OnProgress(CefRefPtr<CefWebURLRequest> requester,
-                            uint64 bytesSent, uint64 totalBytesToBeSent) {
-      REQUIRE_UI_THREAD();
-    }
-
-    virtual void OnData(CefRefPtr<CefWebURLRequest> requester,
-                        const void* data, int dataLength) {
-      REQUIRE_UI_THREAD();
-      buffer_.append(static_cast<const char*>(data), dataLength);
-    }
-
-    virtual void OnError(CefRefPtr<CefWebURLRequest> requester,
-                         ErrorCode errorCode) {
-      REQUIRE_UI_THREAD();
-      std::stringstream ss;
-      ss << "Load failed with error code " << errorCode;
-      browser_->GetMainFrame()->LoadString(ss.str(),
-          "http://tests/weburlrequest");
-    }
-
-   protected:
-    CefRefPtr<CefBrowser> browser_;
-    std::string buffer_;
-
-    IMPLEMENT_REFCOUNTING(CefWebURLRequestClient);
-  };
-
-  CefRefPtr<CefRequest> request(CefRequest::CreateRequest());
-  request->SetURL("http://www.google.com");
-
-  CefRefPtr<CefWebURLRequestClient> client(new RequestClient(browser));
-  CefRefPtr<CefWebURLRequest> requester(
-      CefWebURLRequest::CreateWebURLRequest(request, client));
-}
-
-void RunDOMAccessTest(CefRefPtr<CefBrowser> browser) {
-  class Listener : public CefDOMEventListener {
-   public:
-    Listener() {}
-    virtual void HandleEvent(CefRefPtr<CefDOMEvent> event) {
-      CefRefPtr<CefDOMDocument> document = event->GetDocument();
-      ASSERT(document.get());
-
-      std::stringstream ss;
-
-      CefRefPtr<CefDOMNode> button = event->GetTarget();
-      ASSERT(button.get());
-      std::string buttonValue = button->GetElementAttribute("value");
-      ss << "You clicked the " << buttonValue.c_str() << " button. ";
-
-      if (document->HasSelection()) {
-        std::string startName, endName;
-
-        // Determine the start name by first trying to locate the "id" attribute
-        // and then defaulting to the tag name.
-        {
-          CefRefPtr<CefDOMNode> node = document->GetSelectionStartNode();
-          if (!node->IsElement())
-            node = node->GetParent();
-          if (node->IsElement() && node->HasElementAttribute("id"))
-            startName = node->GetElementAttribute("id");
-          else
-            startName = node->GetName();
-        }
-
-        // Determine the end name by first trying to locate the "id" attribute
-        // and then defaulting to the tag name.
-        {
-          CefRefPtr<CefDOMNode> node = document->GetSelectionEndNode();
-          if (!node->IsElement())
-            node = node->GetParent();
-          if (node->IsElement() && node->HasElementAttribute("id"))
-            endName = node->GetElementAttribute("id");
-          else
-            endName = node->GetName();
-        }
-
-        ss << "The selection is from " <<
-            startName.c_str() << ":" << document->GetSelectionStartOffset() <<
-            " to " <<
-            endName.c_str() << ":" << document->GetSelectionEndOffset();
-      } else {
-        ss << "Nothing is selected.";
-      }
-
-      // Update the description.
-      CefRefPtr<CefDOMNode> desc = document->GetElementById("description");
-      ASSERT(desc.get());
-      CefRefPtr<CefDOMNode> text = desc->GetFirstChild();
-      ASSERT(text.get());
-      ASSERT(text->IsText());
-      text->SetValue(ss.str());
-    }
-
-    IMPLEMENT_REFCOUNTING(Listener);
-  };
-
-  class Visitor : public CefDOMVisitor {
-   public:
-    Visitor() {}
-    virtual void Visit(CefRefPtr<CefDOMDocument> document) {
-      // Register an click listener for the button.
-      CefRefPtr<CefDOMNode> button = document->GetElementById("button");
-      ASSERT(button.get());
-      button->AddEventListener("click", new Listener(), false);
-    }
-
-    IMPLEMENT_REFCOUNTING(Visitor);
-  };
-
-  // The DOM visitor will be called after the path is loaded.
-  CefRefPtr<CefClient> client = browser->GetClient();
-  static_cast<ClientHandler*>(client.get())->AddDOMVisitor(
-      "http://tests/domaccess", new Visitor());
-
-  browser->GetMainFrame()->LoadURL("http://tests/domaccess");
-}
-
 void RunDragDropTest(CefRefPtr<CefBrowser> browser) {
   browser->GetMainFrame()->LoadURL("http://html5demos.com/drag");
-}
-
-void RunModalDialogTest(CefRefPtr<CefBrowser> browser) {
-  browser->GetMainFrame()->LoadURL("http://tests/modalmain");
 }

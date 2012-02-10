@@ -34,9 +34,7 @@ class TestHandler : public CefClient,
                     public CefDisplayHandler,
                     public CefLifeSpanHandler,
                     public CefLoadHandler,
-                    public CefRequestHandler,
-                    public CefV8ContextHandler,
-                    public CefPermissionHandler {
+                    public CefRequestHandler {
  public:
   TestHandler();
   virtual ~TestHandler();
@@ -57,24 +55,15 @@ class TestHandler : public CefClient,
   virtual CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE {
     return this;
   }
-  virtual CefRefPtr<CefV8ContextHandler> GetV8ContextHandler() OVERRIDE {
-    return this;
-  }
-  virtual CefRefPtr<CefPermissionHandler> GetPermissionHandler() OVERRIDE {
-    return this;
-  }
-
   // CefLifeSpanHandler methods
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
   virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
 
   // CefRequestHandler methods
-  virtual bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-                                    CefRefPtr<CefRequest> request,
-                                    CefString& redirectUrl,
-                                    CefRefPtr<CefStreamReader>& resourceStream,
-                                    CefRefPtr<CefResponse> response,
-                                    int loadFlags) OVERRIDE;
+  virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefRequest> request) OVERRIDE;
 
   CefRefPtr<CefBrowser> GetBrowser() { return browser_; }
   CefWindowHandle GetBrowserHwnd() { return browser_hwnd_; }
@@ -91,7 +80,8 @@ class TestHandler : public CefClient,
 
   void CreateBrowser(const CefString& url);
 
-  void AddResource(const CefString& key, const std::string& value,
+  void AddResource(const CefString& url,
+                   const std::string& content,
                    const CefString& mimeType);
   void ClearResources();
 

@@ -17,9 +17,10 @@
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-void CefDisplayHandlerCToCpp::OnNavStateChange(CefRefPtr<CefBrowser> browser,
-    bool canGoBack, bool canGoForward) {
-  if (CEF_MEMBER_MISSING(struct_, on_nav_state_change))
+void CefDisplayHandlerCToCpp::OnLoadingStateChange(
+    CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack,
+    bool canGoForward) {
+  if (CEF_MEMBER_MISSING(struct_, on_loading_state_change))
     return;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -30,8 +31,9 @@ void CefDisplayHandlerCToCpp::OnNavStateChange(CefRefPtr<CefBrowser> browser,
     return;
 
   // Execute
-  struct_->on_nav_state_change(struct_,
+  struct_->on_loading_state_change(struct_,
       CefBrowserCppToC::Wrap(browser),
+      isLoading,
       canGoBack,
       canGoForward);
 }
@@ -61,31 +63,6 @@ void CefDisplayHandlerCToCpp::OnAddressChange(CefRefPtr<CefBrowser> browser,
       CefBrowserCppToC::Wrap(browser),
       CefFrameCppToC::Wrap(frame),
       url.GetStruct());
-}
-
-void CefDisplayHandlerCToCpp::OnContentsSizeChange(
-    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int width,
-    int height) {
-  if (CEF_MEMBER_MISSING(struct_, on_contents_size_change))
-    return;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser.get());
-  if (!browser.get())
-    return;
-  // Verify param: frame; type: refptr_diff
-  DCHECK(frame.get());
-  if (!frame.get())
-    return;
-
-  // Execute
-  struct_->on_contents_size_change(struct_,
-      CefBrowserCppToC::Wrap(browser),
-      CefFrameCppToC::Wrap(frame),
-      width,
-      height);
 }
 
 void CefDisplayHandlerCToCpp::OnTitleChange(CefRefPtr<CefBrowser> browser,

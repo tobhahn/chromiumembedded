@@ -42,9 +42,9 @@ class CefLoadHandlerCToCpp
       CefRefPtr<CefFrame> frame) OVERRIDE;
   virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame, int httpStatusCode) OVERRIDE;
-  virtual bool OnLoadError(CefRefPtr<CefBrowser> browser,
+  virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame, ErrorCode errorCode,
-      const CefString& failedUrl, CefString& errorText) OVERRIDE;
+      const CefString& errorText, const CefString& failedUrl) OVERRIDE;
 };
 
 #endif  // BUILDING_CEF_SHARED

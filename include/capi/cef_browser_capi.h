@@ -88,6 +88,11 @@ typedef struct _cef_browser_t {
   void (CEF_CALLBACK *go_forward)(struct _cef_browser_t* self);
 
   ///
+  // Returns true (1) if the browser is currently loading.
+  ///
+  int (CEF_CALLBACK *is_loading)(struct _cef_browser_t* self);
+
+  ///
   // Reload the current page.
   ///
   void (CEF_CALLBACK *reload)(struct _cef_browser_t* self);
@@ -142,22 +147,36 @@ typedef struct _cef_browser_t {
       struct _cef_browser_t* self);
 
   ///
-  // Returns the focused frame for the browser window. This function should only
-  // be called on the UI thread.
+  // Returns the focused frame for the browser window.
   ///
   struct _cef_frame_t* (CEF_CALLBACK *get_focused_frame)(
       struct _cef_browser_t* self);
 
   ///
-  // Returns the frame with the specified name, or NULL if not found. This
-  // function should only be called on the UI thread.
+  // Returns the frame with the specified identifier, or NULL if not found.
+  ///
+  struct _cef_frame_t* (CEF_CALLBACK *get_frame_byident)(
+      struct _cef_browser_t* self, int64 identifier);
+
+  ///
+  // Returns the frame with the specified name, or NULL if not found.
   ///
   struct _cef_frame_t* (CEF_CALLBACK *get_frame)(struct _cef_browser_t* self,
       const cef_string_t* name);
 
   ///
-  // Returns the names of all existing frames. This function should only be
-  // called on the UI thread.
+  // Returns the number of frames that currently exist.
+  ///
+  size_t (CEF_CALLBACK *get_frame_count)(struct _cef_browser_t* self);
+
+  ///
+  // Returns the identifiers of all existing frames.
+  ///
+  void (CEF_CALLBACK *get_frame_identifiers)(struct _cef_browser_t* self,
+      size_t* identifiersCount, int64* identifiers);
+
+  ///
+  // Returns the names of all existing frames.
   ///
   void (CEF_CALLBACK *get_frame_names)(struct _cef_browser_t* self,
       cef_string_list_t names);
@@ -205,95 +224,6 @@ typedef struct _cef_browser_t {
   // instance.
   ///
   void (CEF_CALLBACK *close_dev_tools)(struct _cef_browser_t* self);
-
-  ///
-  // Returns true (1) if window rendering is disabled.
-  ///
-  int (CEF_CALLBACK *is_window_rendering_disabled)(struct _cef_browser_t* self);
-
-  ///
-  // Get the size of the specified element. This function should only be called
-  // on the UI thread.
-  ///
-  int (CEF_CALLBACK *get_size)(struct _cef_browser_t* self,
-      enum cef_paint_element_type_t type, int* width, int* height);
-
-  ///
-  // Set the size of the specified element. This function is only used when
-  // window rendering is disabled.
-  ///
-  void (CEF_CALLBACK *set_size)(struct _cef_browser_t* self,
-      enum cef_paint_element_type_t type, int width, int height);
-
-  ///
-  // Returns true (1) if a popup is currently visible. This function should only
-  // be called on the UI thread.
-  ///
-  int (CEF_CALLBACK *is_popup_visible)(struct _cef_browser_t* self);
-
-  ///
-  // Hide the currently visible popup, if any.
-  ///
-  void (CEF_CALLBACK *hide_popup)(struct _cef_browser_t* self);
-
-  ///
-  // Invalidate the |dirtyRect| region of the view. This function is only used
-  // when window rendering is disabled and will result in a call to
-  // HandlePaint().
-  ///
-  void (CEF_CALLBACK *invalidate)(struct _cef_browser_t* self,
-      const cef_rect_t* dirtyRect);
-
-  ///
-  // Get the raw image data contained in the specified element without
-  // performing validation. The specified |width| and |height| dimensions must
-  // match the current element size. On Windows |buffer| must be width*height*4
-  // bytes in size and represents a BGRA image with an upper-left origin. This
-  // function should only be called on the UI thread.
-  ///
-  int (CEF_CALLBACK *get_image)(struct _cef_browser_t* self,
-      enum cef_paint_element_type_t type, int width, int height,
-      void* buffer);
-
-  ///
-  // Send a key event to the browser.
-  ///
-  void (CEF_CALLBACK *send_key_event)(struct _cef_browser_t* self,
-      enum cef_key_type_t type, int key, int modifiers, int sysChar,
-      int imeChar);
-
-  ///
-  // Send a mouse click event to the browser. The |x| and |y| coordinates are
-  // relative to the upper-left corner of the view.
-  ///
-  void (CEF_CALLBACK *send_mouse_click_event)(struct _cef_browser_t* self,
-      int x, int y, enum cef_mouse_button_type_t type, int mouseUp,
-      int clickCount);
-
-  ///
-  // Send a mouse move event to the browser. The |x| and |y| coordinates are
-  // relative to the upper-left corner of the view.
-  ///
-  void (CEF_CALLBACK *send_mouse_move_event)(struct _cef_browser_t* self, int x,
-      int y, int mouseLeave);
-
-  ///
-  // Send a mouse wheel event to the browser. The |x| and |y| coordinates are
-  // relative to the upper-left corner of the view.
-  ///
-  void (CEF_CALLBACK *send_mouse_wheel_event)(struct _cef_browser_t* self,
-      int x, int y, int delta);
-
-  ///
-  // Send a focus event to the browser.
-  ///
-  void (CEF_CALLBACK *send_focus_event)(struct _cef_browser_t* self,
-      int setFocus);
-
-  ///
-  // Send a capture lost event to the browser.
-  ///
-  void (CEF_CALLBACK *send_capture_lost_event)(struct _cef_browser_t* self);
 } cef_browser_t;
 
 
@@ -302,7 +232,7 @@ typedef struct _cef_browser_t {
 // |windowInfo|. All values will be copied internally and the actual window will
 // be created on the UI thread. This function call will not block.
 ///
-CEF_EXPORT int cef_browser_create(cef_window_info_t* windowInfo,
+CEF_EXPORT int cef_browser_create(const cef_window_info_t* windowInfo,
     struct _cef_client_t* client, const cef_string_t* url,
     const struct _cef_browser_settings_t* settings);
 
@@ -310,9 +240,9 @@ CEF_EXPORT int cef_browser_create(cef_window_info_t* windowInfo,
 // Create a new browser window using the window parameters specified by
 // |windowInfo|. This function should only be called on the UI thread.
 ///
-CEF_EXPORT cef_browser_t* cef_browser_create_sync(cef_window_info_t* windowInfo,
-    struct _cef_client_t* client, const cef_string_t* url,
-    const struct _cef_browser_settings_t* settings);
+CEF_EXPORT cef_browser_t* cef_browser_create_sync(
+    const cef_window_info_t* windowInfo, struct _cef_client_t* client,
+    const cef_string_t* url, const struct _cef_browser_settings_t* settings);
 
 
 #ifdef __cplusplus

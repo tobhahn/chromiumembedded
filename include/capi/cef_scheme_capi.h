@@ -115,8 +115,9 @@ CEF_EXPORT int cef_register_scheme_handler_factory(
 CEF_EXPORT int cef_clear_scheme_handler_factories();
 
 ///
-// Structure that creates cef_scheme_handler_t instances. The functions of this
-// structure will always be called on the IO thread.
+// Structure that creates cef_resource_handler_t instances for handling scheme
+// requests. The functions of this structure will always be called on the IO
+// thread.
 ///
 typedef struct _cef_scheme_handler_factory_t {
   ///
@@ -125,97 +126,15 @@ typedef struct _cef_scheme_handler_factory_t {
   cef_base_t base;
 
   ///
-  // Return a new scheme handler instance to handle the request. |browser| will
-  // be the browser window that initiated the request. If the request was
-  // initiated using the cef_web_urlrequest_t API |browser| will be NULL.
+  // Return a new resource handler instance to handle the request. |browser|
+  // will be the browser window that initiated the request. If the request was
+  // initiated using the CefWebURLRequest API |browser| will be NULL.
   ///
-  struct _cef_scheme_handler_t* (CEF_CALLBACK *create)(
+  struct _cef_resource_handler_t* (CEF_CALLBACK *create)(
       struct _cef_scheme_handler_factory_t* self,
-      struct _cef_browser_t* browser, const cef_string_t* scheme_name,
-      struct _cef_request_t* request);
+      struct _cef_browser_t* browser, struct _cef_frame_t* frame,
+      const cef_string_t* scheme_name, struct _cef_request_t* request);
 } cef_scheme_handler_factory_t;
-
-
-///
-// Structure used to facilitate asynchronous responses to custom scheme handler
-// requests. The functions of this structure may be called on any thread.
-///
-typedef struct _cef_scheme_handler_callback_t {
-  ///
-  // Base structure.
-  ///
-  cef_base_t base;
-
-  ///
-  // Notify that header information is now available for retrieval.
-  ///
-  void (CEF_CALLBACK *headers_available)(
-      struct _cef_scheme_handler_callback_t* self);
-
-  ///
-  // Notify that response data is now available for reading.
-  ///
-  void (CEF_CALLBACK *bytes_available)(
-      struct _cef_scheme_handler_callback_t* self);
-
-  ///
-  // Cancel processing of the request.
-  ///
-  void (CEF_CALLBACK *cancel)(struct _cef_scheme_handler_callback_t* self);
-} cef_scheme_handler_callback_t;
-
-
-///
-// Structure used to implement a custom scheme handler structure. The functions
-// of this structure will always be called on the IO thread.
-///
-typedef struct _cef_scheme_handler_t {
-  ///
-  // Base structure.
-  ///
-  cef_base_t base;
-
-  ///
-  // Begin processing the request. To handle the request return true (1) and
-  // call headers_available() once the response header information is available
-  // (headers_available() can also be called from inside this function if header
-  // information is available immediately). To cancel the request return false
-  // (0).
-  ///
-  int (CEF_CALLBACK *process_request)(struct _cef_scheme_handler_t* self,
-      struct _cef_request_t* request,
-      struct _cef_scheme_handler_callback_t* callback);
-
-  ///
-  // Retrieve response header information. If the response length is not known
-  // set |response_length| to -1 and read_response() will be called until it
-  // returns false (0). If the response length is known set |response_length| to
-  // a positive value and read_response() will be called until it returns false
-  // (0) or the specified number of bytes have been read. Use the |response|
-  // object to set the mime type, http status code and other optional header
-  // values. To redirect the request to a new URL set |redirectUrl| to the new
-  // URL.
-  ///
-  void (CEF_CALLBACK *get_response_headers)(struct _cef_scheme_handler_t* self,
-      struct _cef_response_t* response, int64* response_length,
-      cef_string_t* redirectUrl);
-
-  ///
-  // Read response data. If data is available immediately copy up to
-  // |bytes_to_read| bytes into |data_out|, set |bytes_read| to the number of
-  // bytes copied, and return true (1). To read the data at a later time set
-  // |bytes_read| to 0, return true (1) and call bytes_available() when the data
-  // is available. To indicate response completion return false (0).
-  ///
-  int (CEF_CALLBACK *read_response)(struct _cef_scheme_handler_t* self,
-      void* data_out, int bytes_to_read, int* bytes_read,
-      struct _cef_scheme_handler_callback_t* callback);
-
-  ///
-  // Request processing has been canceled.
-  ///
-  void (CEF_CALLBACK *cancel)(struct _cef_scheme_handler_t* self);
-} cef_scheme_handler_t;
 
 
 #ifdef __cplusplus

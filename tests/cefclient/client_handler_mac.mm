@@ -7,13 +7,11 @@
 #include "cefclient/client_handler.h"
 #include "include/cef_browser.h"
 #include "include/cef_frame.h"
+#include "include/cef_stream.h"
+#include "include/wrapper/cef_stream_resource_handler.h"
 #include "cefclient/cefclient.h"
 #include "cefclient/resource_util.h"
 #include "cefclient/string_util.h"
-
-#ifdef TEST_REDIRECT_POPUP_URLS
-#include "cefclient/client_popup_handler.h"
-#endif
 
 // ClientHandler::ClientLifeSpanHandler implementation
 
@@ -25,59 +23,39 @@ bool ClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> parentBrowser,
                                   CefBrowserSettings& settings) {
   REQUIRE_UI_THREAD();
 
-#ifdef TEST_REDIRECT_POPUP_URLS
-  std::string urlStr = url;
-  if (urlStr.find("chrome-devtools:") == std::string::npos) {
-    // Show all popup windows excluding DevTools in the current window.
-    windowInfo.m_bHidden = true;
-    client = new ClientPopupHandler(m_Browser);
-  }
-#endif // TEST_REDIRECT_POPUP_URLS
-
   return false;
 }
 
-bool ClientHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-                                     CefRefPtr<CefRequest> request,
-                                     CefString& redirectUrl,
-                                     CefRefPtr<CefStreamReader>& resourceStream,
-                                     CefRefPtr<CefResponse> response,
-                                     int loadFlags) {
-  REQUIRE_IO_THREAD();
-
+CefRefPtr<CefResourceHandler> ClientHandler::GetResourceHandler(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefRequest> request) {
   std::string url = request->GetURL();
   if (url == "http://tests/request") {
     // Show the request contents
     std::string dump;
     DumpRequestContents(request, dump);
-    resourceStream = CefStreamReader::CreateForData(
-        static_cast<void*>(const_cast<char*>(dump.c_str())),
-		dump.size());
-    response->SetMimeType("text/plain");
-    response->SetStatus(200);
-  } else if (strstr(url.c_str(), "/ps_logo2.png") != NULL) {
-    // Any time we find "ps_logo2.png" in the URL substitute in our own image
-    resourceStream = GetBinaryResourceReader("logo.png");
-    response->SetMimeType("image/png");
-    response->SetStatus(200);
+    CefRefPtr<CefStreamReader> stream =
+        CefStreamReader::CreateForData(
+            static_cast<void*>(const_cast<char*>(dump.c_str())),
+            dump.size());
+    ASSERT(stream.get());
+    return new CefStreamResourceHandler("text/plain", stream);
   } else if (url == "http://tests/localstorage") {
     // Show the localstorage contents
-    resourceStream = GetBinaryResourceReader("localstorage.html");
-    response->SetMimeType("text/html");
-    response->SetStatus(200);
+    CefRefPtr<CefStreamReader> stream =
+        GetBinaryResourceReader("localstorage.html");
+    ASSERT(stream.get());
+    return new CefStreamResourceHandler("text/html", stream);
   } else if (url == "http://tests/xmlhttprequest") {
-    // Show the xmlhttprequest HTML contents
-    resourceStream = GetBinaryResourceReader("xmlhttprequest.html");
-    response->SetMimeType("text/html");
-    response->SetStatus(200);
-  } else if (url == "http://tests/domaccess") {
-    // Show the domaccess HTML contents
-    resourceStream = GetBinaryResourceReader("domaccess.html");
-    response->SetMimeType("text/html");
-    response->SetStatus(200);
+    // Show the xmlhttprequest contents
+    CefRefPtr<CefStreamReader> stream =
+       GetBinaryResourceReader("xmlhttprequest.html");
+    ASSERT(stream.get());
+    return new CefStreamResourceHandler("text/html", stream);
   }
 
-  return false;
+  return NULL;
 }
 
 void ClientHandler::OnAddressChange(CefRefPtr<CefBrowser> browser,

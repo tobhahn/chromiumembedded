@@ -72,26 +72,53 @@ class CefCriticalSection {
   pthread_mutexattr_t attr_;
 };
 
+struct CefMainArgsTraits {
+  typedef cef_main_args_t struct_type;
+
+  static inline void init(struct_type* s) {}
+  static inline void clear(struct_type* s) {}
+
+  static inline void set(const struct_type* src, struct_type* target,
+      bool copy) {
+    target->argc = src->argc;
+    target->argv = src->argv;
+  }
+};
+
+// Class representing CefExecuteProcess arguments.
+class CefMainArgs : public CefStructBase<CefMainArgsTraits> {
+ public:
+  typedef CefStructBase<CefMainArgsTraits> parent;
+
+  CefMainArgs() : parent() {}
+  explicit CefMainArgs(const cef_main_args_t& r) : parent(r) {}
+  explicit CefMainArgs(const CefMainArgs& r) : parent(r) {}
+  explicit CefMainArgs(int argc, const char** argv) : parent() {
+    this.argc = argc;
+    this.argv = argv;
+  }
+};
+
 struct CefWindowInfoTraits {
   typedef cef_window_info_t struct_type;
 
   static inline void init(struct_type* s) {}
 
   static inline void clear(struct_type* s) {
-    cef_string_clear(&s->m_windowName);
+    cef_string_clear(&s->window_name);
   }
 
   static inline void set(const struct_type* src, struct_type* target,
       bool copy) {
-    target->m_View = src->m_View;
-    target->m_ParentView = src->m_ParentView;
-    cef_string_set(src->m_windowName.str, src->m_windowName.length,
-        &target->m_windowName, copy);
-    target->m_x = src->m_x;
-    target->m_y = src->m_y;
-    target->m_nWidth = src->m_nWidth;
-    target->m_nHeight = src->m_nHeight;
-    target->m_bHidden = src->m_bHidden;
+    target->view = src->view;
+    target->parent_view = src->parent_view;
+    cef_string_set(src->window_name.str, src->window_name.length,
+        &target->window_name, copy);
+    target->x = src->x;
+    target->y = src->y;
+    target->width = src->width;
+    target->height = src->height;
+    target->hidden = src->hidden;
   }
 };
 
@@ -106,29 +133,14 @@ class CefWindowInfo : public CefStructBase<CefWindowInfoTraits> {
 
   void SetAsChild(CefWindowHandle ParentView, int x, int y, int width,
                   int height) {
-    m_ParentView = ParentView;
-    m_x = x;
-    m_y = y;
-    m_nWidth = width;
-    m_nHeight = height;
-    m_bHidden = false;
+    parent_view = ParentView;
+    x = x;
+    y = y;
+    width = width;
+    height = height;
+    hidden = false;
   }
 };
-
-struct CefPrintInfoTraits {
-  typedef cef_print_info_t struct_type;
-
-  static inline void init(struct_type* s) {}
-  static inline void clear(struct_type* s) {}
-
-  static inline void set(const struct_type* src, struct_type* target,
-      bool copy) {
-    target->m_Scale = src->m_Scale;
-  }
-};
-
-// Class representing print context information.
-typedef CefStructBase<CefPrintInfoTraits> CefPrintInfo;
 
 #endif  // OS_MACOSX
 

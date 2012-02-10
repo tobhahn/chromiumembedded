@@ -4,6 +4,8 @@
 
 #include "tests/unittests/test_handler.h"
 #include "include/cef_runnable.h"
+#include "include/cef_stream.h"
+#include "include/wrapper/cef_stream_resource_handler.h"
 
 namespace {
 
@@ -45,27 +47,26 @@ void TestHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   }
 }
 
-bool TestHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-                                    CefRefPtr<CefRequest> request,
-                                    CefString& redirectUrl,
-                                    CefRefPtr<CefStreamReader>& resourceStream,
-                                    CefRefPtr<CefResponse> response,
-                                    int loadFlags) {
+CefRefPtr<CefResourceHandler> TestHandler::GetResourceHandler(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefRequest> request) {
   AutoLock lock_scope(this);
+
   if (resource_map_.size() > 0) {
     CefString url = request->GetURL();
     ResourceMap::const_iterator it = resource_map_.find(url);
     if (it != resource_map_.end()) {
       // Return the previously mapped resource
-      resourceStream = CefStreamReader::CreateForData(
-          static_cast<void*>(const_cast<char*>(it->second.first.c_str())),
-          it->second.first.length());
-      response->SetMimeType(it->second.second);
-      response->SetStatus(200);
+      CefRefPtr<CefStreamReader> stream =
+          CefStreamReader::CreateForData(
+              static_cast<void*>(const_cast<char*>(it->second.first.c_str())),
+              it->second.first.length());
+      return new CefStreamResourceHandler(it->second.second, stream);
     }
   }
 
-  return false;
+  return NULL;
 }
 
 void TestHandler::ExecuteTest() {
@@ -90,14 +91,15 @@ void TestHandler::CreateBrowser(const CefString& url) {
   CefBrowserSettings settings;
 #if defined(OS_WIN)
   windowInfo.SetAsPopup(NULL, "CefUnitTest");
-  windowInfo.m_dwStyle |= WS_VISIBLE;
+  windowInfo.style |= WS_VISIBLE;
 #endif
   CefBrowser::CreateBrowser(windowInfo, this, url, settings);
 }
 
-void TestHandler::AddResource(const CefString& key, const std::string& value,
+void TestHandler::AddResource(const CefString& url,
+                              const std::string& content,
                               const CefString& mimeType) {
-  resource_map_.insert(std::make_pair(key, std::make_pair(value, mimeType)));
+  resource_map_.insert(std::make_pair(url, std::make_pair(content, mimeType)));
 }
 
 void TestHandler::ClearResources() {

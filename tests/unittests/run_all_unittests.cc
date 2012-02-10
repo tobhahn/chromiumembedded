@@ -44,6 +44,17 @@ class CefTestThread : public base::Thread {
 
 
 int main(int argc, char** argv) {
+#if defined(OS_WIN)
+  CefMainArgs main_args(::GetModuleHandle(NULL));
+#else
+  CefMainArgs main_args(argc, argv);
+#endif
+
+  // Execute the secondary process, if any.
+  int exit_code = CefExecuteProcess(main_args);
+  if (exit_code >= 0)
+    return exit_code;
+
   // Initialize the CommandLine object.
   CefTestSuite::InitCommandLine(argc, argv);
 
@@ -57,7 +68,7 @@ int main(int argc, char** argv) {
 #endif
 
   // Initialize CEF.
-  CefInitialize(settings, NULL);
+  CefInitialize(main_args, settings, NULL);
 
   // Create the test suite object.
   CefTestSuite test_suite(argc, argv);

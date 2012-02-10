@@ -6,7 +6,6 @@
   'variables': {
     'pkg-config': 'pkg-config',
     'chromium_code': 1,
-    'repack_locales_cmd': ['python', 'tools/repack_locales.py'],
     'grit_out_dir': '<(SHARED_INTERMEDIATE_DIR)/cef',
   },
   'conditions': [
@@ -29,7 +28,7 @@
       'mac_bundle': 1,
       'msvs_guid': '6617FED9-C5D4-4907-BF55-A90062A6683F',
       'dependencies': [
-        '<(DEPTH)/third_party/npapi/npapi.gyp:npapi',
+        'cef_pak',
         'libcef',
         'libcef_dll_wrapper',
       ],
@@ -60,66 +59,21 @@
         'INFOPLIST_FILE': 'tests/cefclient/mac/Info.plist',
       },
       'conditions': [
+        ['OS=="win" and win_use_allocator_shim==1', {
+          'dependencies': [
+            '<(DEPTH)/base/allocator/allocator.gyp:allocator',
+          ],
+        }],
         ['OS=="win"', {
-          'variables': {
-            'repack_path': '../tools/grit/grit/format/repack.py',
-          },
-          'actions': [
-            {
-              'action_name': 'repack_locales',
-              'inputs': [
-                'tools/repack_locales.py',
-                # NOTE: Ideally the common command args would be shared
-                # amongst inputs/outputs/action, but the args include shell
-                # variables which need to be passed intact, and command
-                # expansion wants to expand the shell variables. Adding the
-                # explicit quoting here was the only way it seemed to work.
-                '>!@(<(repack_locales_cmd) -i -g \"<(grit_out_dir)\" -s \"<(SHARED_INTERMEDIATE_DIR)\" -x \"<(INTERMEDIATE_DIR)\" <(locales))',
-              ],
-              'outputs': [
-                '>!@(<(repack_locales_cmd) -o -g \"<(grit_out_dir)\" -s \"<(SHARED_INTERMEDIATE_DIR)\" -x \"<(INTERMEDIATE_DIR)\" <(locales))',
-              ],
-              'action': [
-                '<@(repack_locales_cmd)',
-                '-g', '<(grit_out_dir)',
-                '-s', '<(SHARED_INTERMEDIATE_DIR)',
-                '-x', '<(INTERMEDIATE_DIR)',
-                '<@(locales)',
-              ],
-            },
-            {
-              # On Windows chrome.pak will contain only the inspector resources.
-              # Other resources are built into libcef.dll.
-              'action_name': 'repack_resources',
-              'variables': {
-                'pak_inputs': [
-                  '<(grit_out_dir)/devtools_resources.pak',
-                ],
+          'configurations': {
+            'Debug_Base': {
+              'msvs_settings': {
+                'VCLinkerTool': {
+                  'LinkIncremental': '<(msvs_large_module_debug_link_mode)',
+                },
               },
-              'inputs': [
-                '<(repack_path)',
-                '<@(pak_inputs)',
-              ],
-              'outputs': [
-                '<(INTERMEDIATE_DIR)/repack/chrome.pak',
-              ],
-              'action': ['python', '<(repack_path)', '<@(_outputs)', '<@(pak_inputs)'],
             },
-          ],
-          'copies': [
-            {
-              'destination': '<(PRODUCT_DIR)/locales',
-              'files': [
-                '<!@pymod_do_main(repack_locales -o -g <(grit_out_dir) -s <(SHARED_INTERMEDIATE_DIR) -x <(INTERMEDIATE_DIR) <(locales))'
-              ],
-            },
-            {
-              'destination': '<(PRODUCT_DIR)',
-              'files': [
-                '<(INTERMEDIATE_DIR)/repack/chrome.pak'
-              ],
-            },
-          ],
+          },
           'msvs_settings': {
             'VCLinkerTool': {
               # Set /SUBSYSTEM:WINDOWS.
@@ -132,8 +86,6 @@
               '-lcomctl32.lib',
               '-lshlwapi.lib',
               '-lrpcrt4.lib',
-              '-lopengl32.lib',
-              '-lglu32.lib',
             ],
           },
           'sources': [
@@ -141,57 +93,18 @@
             '<@(cefclient_sources_win)',
           ],
         }],
+        ['OS == "win" or (toolkit_uses_gtk == 1 and selinux == 0)', {
+          'dependencies': [
+            '<(DEPTH)/sandbox/sandbox.gyp:sandbox',
+          ],
+        }],
+        ['toolkit_uses_gtk == 1', {
+          'dependencies': [
+            '<(DEPTH)/build/linux/system.gyp:gtk',
+          ],
+        }],
         [ 'OS=="mac"', {
           'product_name': 'cefclient',
-          'variables': {
-            'repack_path': '../tools/grit/grit/format/repack.py',
-          },
-          'actions': [
-            {
-              'action_name': 'repack_locales',
-              'process_outputs_as_mac_bundle_resources': 1,
-              'inputs': [
-                'tools/repack_locales.py',
-                # NOTE: Ideally the common command args would be shared
-                # amongst inputs/outputs/action, but the args include shell
-                # variables which need to be passed intact, and command
-                # expansion wants to expand the shell variables. Adding the
-                # explicit quoting here was the only way it seemed to work.
-                '>!@(<(repack_locales_cmd) -i -g \'<(grit_out_dir)\' -s \'<(SHARED_INTERMEDIATE_DIR)\' -x \'<(INTERMEDIATE_DIR)\' <(locales))',
-              ],
-              'outputs': [
-                '>!@(<(repack_locales_cmd) -o -g \'<(grit_out_dir)\' -s \'<(SHARED_INTERMEDIATE_DIR)\' -x \'<(INTERMEDIATE_DIR)\' <(locales))',
-              ],
-              'action': [
-                '<@(repack_locales_cmd)',
-                '-g', '<(grit_out_dir)',
-                '-s', '<(SHARED_INTERMEDIATE_DIR)',
-                '-x', '<(INTERMEDIATE_DIR)',
-                '<@(locales)',
-              ],
-            },
-            {
-              'action_name': 'repack_resources',
-              'process_outputs_as_mac_bundle_resources': 1,
-              'variables': {
-                'pak_inputs': [
-                  '<(grit_out_dir)/devtools_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/net/net_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/ui/gfx/gfx_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/webkit/webkit_chromium_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/webkit/webkit_resources.pak',
-                ],
-              },
-              'inputs': [
-                '<(repack_path)',
-                '<@(pak_inputs)',
-              ],
-              'outputs': [
-                '<(INTERMEDIATE_DIR)/repack/chrome.pak',
-              ],
-              'action': ['python', '<(repack_path)', '<@(_outputs)', '<@(pak_inputs)'],
-            },
-          ],
           'copies': [
             {
               # Add library dependencies to the bundle.
@@ -205,7 +118,7 @@
               # Add the WebCore resources to the bundle.
               'destination': '<(PRODUCT_DIR)/cefclient.app/Contents/',
               'files': [
-                '../third_party/WebKit/Source/WebCore/Resources/',
+                '<(DEPTH)/third_party/WebKit/Source/WebCore/Resources/',
               ],
             },
           ],
@@ -224,66 +137,7 @@
             '<@(includes_linux)',
             '<@(cefclient_sources_linux)',
           ],
-          'variables': {
-            'repack_path': '../tools/grit/grit/format/repack.py',
-          },
-          'actions': [
-            {
-              'action_name': 'repack_locales',
-              'inputs': [
-                'tools/repack_locales.py',
-                # NOTE: Ideally the common command args would be shared
-                # amongst inputs/outputs/action, but the args include shell
-                # variables which need to be passed intact, and command
-                # expansion wants to expand the shell variables. Adding the
-                # explicit quoting here was the only way it seemed to work.
-                '>!@(<(repack_locales_cmd) -i -g \'<(grit_out_dir)\' -s \'<(SHARED_INTERMEDIATE_DIR)\' -x \'<(INTERMEDIATE_DIR)\' <(locales))',
-              ],
-              'outputs': [
-                '>!@(<(repack_locales_cmd) -o -g \'<(grit_out_dir)\' -s \'<(SHARED_INTERMEDIATE_DIR)\' -x \'<(INTERMEDIATE_DIR)\' <(locales))',
-              ],
-              'action': [
-                '<@(repack_locales_cmd)',
-                '-g', '<(grit_out_dir)',
-                '-s', '<(SHARED_INTERMEDIATE_DIR)',
-                '-x', '<(INTERMEDIATE_DIR)',
-                '<@(locales)',
-              ],
-            },
-            {
-              'action_name': 'repack_resources',
-              'variables': {
-                'pak_inputs': [
-                  '<(grit_out_dir)/devtools_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/net/net_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/ui/gfx/gfx_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/webkit/webkit_chromium_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/webkit/webkit_resources.pak',
-                ],
-              },
-              'inputs': [
-                '<(repack_path)',
-                '<@(pak_inputs)',
-              ],
-              'outputs': [
-                '<(INTERMEDIATE_DIR)/repack/chrome.pak',
-              ],
-              'action': ['python', '<(repack_path)', '<@(_outputs)', '<@(pak_inputs)'],
-            },
-          ],
           'copies': [
-            {
-              'destination': '<(PRODUCT_DIR)/locales',
-              'files': [
-                '<!@pymod_do_main(repack_locales -o -g <(grit_out_dir) -s <(SHARED_INTERMEDIATE_DIR) -x <(INTERMEDIATE_DIR) <(locales))'
-              ],
-            },
-            {
-              'destination': '<(PRODUCT_DIR)',
-              'files': [
-                '<(INTERMEDIATE_DIR)/repack/chrome.pak'
-              ],
-            },
             {
               'destination': '<(PRODUCT_DIR)/files',
               'files': [
@@ -306,6 +160,7 @@
         '<(DEPTH)/testing/gtest.gyp:gtest',
         '<(DEPTH)/third_party/icu/icu.gyp:icui18n',
         '<(DEPTH)/third_party/icu/icu.gyp:icuuc',
+        'cef_pak',
         'libcef',
         'libcef_dll_wrapper',
       ],
@@ -313,24 +168,17 @@
         'tests/cefclient/cefclient_switches.cpp',
         'tests/cefclient/cefclient_switches.h',
         'tests/unittests/command_line_unittest.cc',
-        'tests/unittests/content_filter_unittest.cc',
-        'tests/unittests/cookie_unittest.cc',
-        'tests/unittests/dom_unittest.cc',
         'tests/unittests/navigation_unittest.cc',
         'tests/unittests/request_unittest.cc',
         'tests/unittests/run_all_unittests.cc',
         'tests/unittests/scheme_handler_unittest.cc',
         'tests/unittests/stream_unittest.cc',
         'tests/unittests/string_unittest.cc',
-        'tests/unittests/storage_unittest.cc',
         'tests/unittests/test_handler.cc',
         'tests/unittests/test_handler.h',
         'tests/unittests/test_suite.cc',
         'tests/unittests/test_suite.h',
         'tests/unittests/url_unittest.cc',
-        'tests/unittests/v8_unittest.cc',
-        'tests/unittests/v8_unittest_legacy.cc',
-        'tests/unittests/web_urlrequest_unittest.cc',
         'tests/unittests/xml_reader_unittest.cc',
         'tests/unittests/zip_reader_unittest.cc',
       ],
@@ -355,58 +203,9 @@
       'conditions': [
         [ 'OS=="mac"', {
           'product_name': 'cef_unittests',
-          'variables': {
-            'repack_path': '../tools/grit/grit/format/repack.py',
-          },
           'run_as': {
             'action': ['${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${PRODUCT_NAME}'],
           },
-          'actions': [
-            {
-              'action_name': 'repack_locales',
-              'process_outputs_as_mac_bundle_resources': 1,
-              'inputs': [
-                'tools/repack_locales.py',
-                # NOTE: Ideally the common command args would be shared
-                # amongst inputs/outputs/action, but the args include shell
-                # variables which need to be passed intact, and command
-                # expansion wants to expand the shell variables. Adding the
-                # explicit quoting here was the only way it seemed to work.
-                '>!@(<(repack_locales_cmd) -i -g \'<(grit_out_dir)\' -s \'<(SHARED_INTERMEDIATE_DIR)\' -x \'<(INTERMEDIATE_DIR)\' <(locales))',
-              ],
-              'outputs': [
-                '>!@(<(repack_locales_cmd) -o -g \'<(grit_out_dir)\' -s \'<(SHARED_INTERMEDIATE_DIR)\' -x \'<(INTERMEDIATE_DIR)\' <(locales))',
-              ],
-              'action': [
-                '<@(repack_locales_cmd)',
-                '-g', '<(grit_out_dir)',
-                '-s', '<(SHARED_INTERMEDIATE_DIR)',
-                '-x', '<(INTERMEDIATE_DIR)',
-                '<@(locales)',
-              ],
-            },
-            {
-              'action_name': 'repack_resources',
-              'process_outputs_as_mac_bundle_resources': 1,
-              'variables': {
-                'pak_inputs': [
-                  '<(grit_out_dir)/devtools_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/net/net_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/ui/gfx/gfx_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/webkit/webkit_chromium_resources.pak',
-                  '<(SHARED_INTERMEDIATE_DIR)/webkit/webkit_resources.pak',
-                ],
-              },
-              'inputs': [
-                '<(repack_path)',
-                '<@(pak_inputs)',
-              ],
-              'outputs': [
-                '<(INTERMEDIATE_DIR)/repack/chrome.pak',
-              ],
-              'action': ['python', '<(repack_path)', '<@(_outputs)', '<@(pak_inputs)'],
-            },
-          ],
           'copies': [
             {
               # Add library dependencies to the bundle.
@@ -433,42 +232,30 @@
       'type': 'shared_library',
       'msvs_guid': 'C13650D5-CF1A-4259-BE45-B1EBA6280E47',
       'dependencies': [
+        '<(DEPTH)/content/content.gyp:content_app',
+        '<(DEPTH)/content/content.gyp:content_browser',
+        '<(DEPTH)/content/content.gyp:content_common',
+        '<(DEPTH)/content/content.gyp:content_gpu',
+        '<(DEPTH)/content/content.gyp:content_plugin',
+        '<(DEPTH)/content/content.gyp:content_ppapi_plugin',
+        '<(DEPTH)/content/content.gyp:content_renderer',
+        '<(DEPTH)/content/content.gyp:content_utility',
+        '<(DEPTH)/content/content.gyp:content_worker',
+        '<(DEPTH)/content/content_resources.gyp:content_resources',
         '<(DEPTH)/base/base.gyp:base',
-        '<(DEPTH)/base/base.gyp:base_i18n',
+        '<(DEPTH)/base/third_party/dynamic_annotations/dynamic_annotations.gyp:dynamic_annotations',
         '<(DEPTH)/build/temp_gyp/googleurl.gyp:googleurl',
-        '<(DEPTH)/media/media.gyp:media',
+        '<(DEPTH)/ipc/ipc.gyp:ipc',
         '<(DEPTH)/net/net.gyp:net',
-        '<(DEPTH)/net/net.gyp:net_resources',
-        '<(DEPTH)/printing/printing.gyp:printing',
-        '<(DEPTH)/sdch/sdch.gyp:sdch',
         '<(DEPTH)/skia/skia.gyp:skia',
-        '<(DEPTH)/third_party/bzip2/bzip2.gyp:bzip2',
-        '<(DEPTH)/third_party/ffmpeg/ffmpeg.gyp:ffmpeg',
-        '<(DEPTH)/third_party/icu/icu.gyp:icui18n',
-        '<(DEPTH)/third_party/icu/icu.gyp:icuuc',
-        '<(DEPTH)/third_party/leveldatabase/leveldatabase.gyp:leveldatabase',
-        '<(DEPTH)/third_party/libjpeg_turbo/libjpeg.gyp:libjpeg',
-        '<(DEPTH)/third_party/libpng/libpng.gyp:libpng',
-        '<(DEPTH)/third_party/libxml/libxml.gyp:libxml',
-        '<(DEPTH)/third_party/libxslt/libxslt.gyp:libxslt',
-        '<(DEPTH)/third_party/modp_b64/modp_b64.gyp:modp_b64',
-        '<(DEPTH)/third_party/WebKit/Source/WebCore/WebCore.gyp/WebCore.gyp:webcore',
         '<(DEPTH)/third_party/WebKit/Source/WebKit/chromium/WebKit.gyp:webkit',
-        '<(DEPTH)/third_party/zlib/zlib.gyp:zlib',
-        '<(DEPTH)/ui/ui.gyp:gfx_resources',
         '<(DEPTH)/ui/ui.gyp:ui',
         '<(DEPTH)/v8/tools/gyp/v8.gyp:v8',
         '<(DEPTH)/webkit/support/webkit_support.gyp:appcache',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:blob',
         '<(DEPTH)/webkit/support/webkit_support.gyp:database',
         '<(DEPTH)/webkit/support/webkit_support.gyp:fileapi',
         '<(DEPTH)/webkit/support/webkit_support.gyp:glue',
         '<(DEPTH)/webkit/support/webkit_support.gyp:quota',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_gpu',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_media',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_resources',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_strings',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_user_agent',
         'libcef_static',
       ],
       'defines': [
@@ -497,17 +284,23 @@
         'OTHER_LDFLAGS': ['-Wl,-ObjC'],
       },
       'conditions': [
-        ['OS=="win"', {
+        ['OS=="win" and win_use_allocator_shim==1', {
           'dependencies': [
-            '<(DEPTH)/breakpad/breakpad.gyp:breakpad_handler',
-            '<(DEPTH)/third_party/angle/src/build_angle.gyp:libEGL',
-            '<(DEPTH)/third_party/angle/src/build_angle.gyp:libGLESv2',
-            '<(DEPTH)/ui/views/views.gyp:views',
+            '<(DEPTH)/base/allocator/allocator.gyp:allocator',
           ],
+        }],
+        ['OS=="win"', {
+          'configurations': {
+            'Debug_Base': {
+              'msvs_settings': {
+                'VCLinkerTool': {
+                  'LinkIncremental': '<(msvs_large_module_debug_link_mode)',
+                },
+              },
+            },
+          },
           'sources': [
             '<@(includes_win)',
-            '$(OutDir)/obj/global_intermediate/webkit/webkit_chromium_resources.rc',
-            '$(OutDir)/obj/global_intermediate/webkit/webkit_resources.rc',
             'libcef_dll/libcef_dll.rc',
           ],
           'link_settings': {
@@ -523,7 +316,7 @@
           },
         }],
         [ 'OS=="linux" or OS=="freebsd" or OS=="openbsd"', {
-         'dependencies':[
+          'dependencies':[
             '<(DEPTH)/base/allocator/allocator.gyp:allocator',
           ],
           'direct_dependent_settings': {
@@ -547,7 +340,6 @@
       'type': 'static_library',
       'msvs_guid': 'A9D6DC71-C0DC-4549-AEA0-3B15B44E86A9',
       'dependencies': [
-        '<(DEPTH)/third_party/npapi/npapi.gyp:npapi',
         'libcef',
       ],
       'defines': [
@@ -564,43 +356,136 @@
       ],
     },
     {
-      'target_name': 'cef_extra_resources',
+      # Create the locale-specific pack files.
+      'target_name': 'cef_locales',
       'type': 'none',
       'dependencies': [
-        '<(DEPTH)/third_party/WebKit/Source/WebKit/chromium/WebKit.gyp:generate_devtools_grd',
+        '<(DEPTH)/ui/base/strings/ui_strings.gyp:ui_strings',
+        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_strings',
       ],
-      # These resources end up in chrome.pak because they are resources
-      # used by internal pages.  Putting them in a spearate pak file makes
-      # it easier for us to reference them internally.
+      'variables': {
+        'repack_path': '<(DEPTH)/tools/grit/grit/format/repack.py',
+        'repack_locales_cmd': ['python', 'tools/repack_locales.py'],
+      },
       'actions': [
         {
-          'action_name': 'devtools_resources',
-          # This can't use ../build/grit_action.gypi because the grd file
-          # is generated a build time, so the trick of using grit_info to get
-          # the real inputs/outputs at GYP time isn't possible.
-          'variables': {
-            'grit_cmd': ['python', '../tools/grit/grit.py'],
-            'grit_grd_file': '<(SHARED_INTERMEDIATE_DIR)/devtools/devtools_resources.grd',
-          },
+          'action_name': 'repack_locales',
+          'process_outputs_as_mac_bundle_resources': 1,
           'inputs': [
-            '<(grit_grd_file)',
-            '<!@pymod_do_main(grit_info --inputs)',
+            'tools/repack_locales.py',
+            # NOTE: Ideally the common command args would be shared
+            # amongst inputs/outputs/action, but the args include shell
+            # variables which need to be passed intact, and command
+            # expansion wants to expand the shell variables. Adding the
+            # explicit quoting here was the only way it seemed to work.
+            '>!@(<(repack_locales_cmd) -i -g <(grit_out_dir) -s <(SHARED_INTERMEDIATE_DIR) -x <(INTERMEDIATE_DIR) <(locales))',
           ],
           'outputs': [
-            '<(grit_out_dir)/grit/devtools_resources.h',
-            '<(grit_out_dir)/devtools_resources.pak',
-            '<(grit_out_dir)/grit/devtools_resources_map.cc',
-            '<(grit_out_dir)/grit/devtools_resources_map.h',
+            '>!@(<(repack_locales_cmd) -o -g <(grit_out_dir) -s <(SHARED_INTERMEDIATE_DIR) -x <(INTERMEDIATE_DIR) <(locales))',
           ],
-          'action': ['<@(grit_cmd)',
-                     '-i', '<(grit_grd_file)', 'build',
-                     '-o', '<(grit_out_dir)',
-                     '-D', 'SHARED_INTERMEDIATE_DIR=<(SHARED_INTERMEDIATE_DIR)',
-                     '<@(grit_defines)' ],
-          'message': 'Generating resources from <(grit_grd_file)',
+          'action': [
+            '<@(repack_locales_cmd)',
+            '-g', '<(grit_out_dir)',
+            '-s', '<(SHARED_INTERMEDIATE_DIR)',
+            '-x', '<(INTERMEDIATE_DIR)',
+            '<@(locales)',
+          ],
+        },
+      ],
+      'conditions': [
+        ['OS != "mac"', {
+          'copies': [
+            {
+              'destination': '<(PRODUCT_DIR)/locales',
+              'files': [
+                '<!@pymod_do_main(repack_locales -o -g <(grit_out_dir) -s <(SHARED_INTERMEDIATE_DIR) -x <(INTERMEDIATE_DIR) <(locales))'
+              ],
+            },
+          ],
+        }],
+      ],
+    },
+    {
+      # Create the pack file for CEF resources.
+      'target_name': 'cef_resources',
+      'type': 'none',
+      'actions': [
+        {
+          'action_name': 'cef_resources',
+          'variables': {
+            'grit_grd_file': 'libcef/browser/resources/cef_resources.grd',
+          },
+          'includes': [ '../build/grit_action.gypi' ],
         },
       ],
       'includes': [ '../build/grit_target.gypi' ],
+      'copies': [
+        {
+          'destination': '<(PRODUCT_DIR)',
+          'files': [
+            '<(grit_out_dir)/cef_resources.pak'
+          ],
+        },
+      ],
+    },
+    {
+      # Combine all non-localized pack file resources into a single CEF pack file.
+      'target_name': 'cef_pak',
+      'type': 'none',
+      'dependencies': [
+        '<(DEPTH)/content/browser/debugger/devtools_resources.gyp:devtools_resources',
+        '<(DEPTH)/content/content_resources.gyp:content_resources',
+        '<(DEPTH)/net/net.gyp:net_resources',
+        '<(DEPTH)/ui/ui.gyp:ui_resources',
+        '<(DEPTH)/ui/ui.gyp:ui_resources_standard',
+        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_resources',
+        'cef_locales',
+        'cef_resources',
+      ],
+      'variables': {
+        'repack_path': '<(DEPTH)/tools/grit/grit/format/repack.py',
+      },
+      'actions': [
+        {
+          'action_name': 'repack_cef_pack',
+          'process_outputs_as_mac_bundle_resources': 1,
+          'variables': {
+            'pak_inputs': [
+              '<(SHARED_INTERMEDIATE_DIR)/content/content_resources.pak',
+              '<(SHARED_INTERMEDIATE_DIR)/net/net_resources.pak',
+              '<(SHARED_INTERMEDIATE_DIR)/ui/ui_resources/ui_resources.pak',
+              '<(SHARED_INTERMEDIATE_DIR)/ui/ui_resources_standard/ui_resources_standard.pak',
+              '<(SHARED_INTERMEDIATE_DIR)/webkit/devtools_resources.pak',
+              '<(SHARED_INTERMEDIATE_DIR)/webkit/webkit_chromium_resources.pak',
+              '<(SHARED_INTERMEDIATE_DIR)/webkit/webkit_resources.pak',
+              '<(grit_out_dir)/cef_resources.pak',
+            ],
+            'conditions': [
+              ['OS != "mac"', {
+                'pak_inputs': [
+                  '<(SHARED_INTERMEDIATE_DIR)/ui/gfx/gfx_resources.pak',
+                ]
+              }],
+            ],
+          },
+          'inputs': [
+            '<(repack_path)',
+            '<@(pak_inputs)',
+          ],
+          'outputs': [
+            '<(PRODUCT_DIR)/cef.pak',
+          ],
+          'action': ['python', '<(repack_path)', '<@(_outputs)',
+                     '<@(pak_inputs)'],
+        },
+      ],
+      'conditions': [
+        ['OS != "mac"', {
+          'dependencies': [
+            '<(DEPTH)/ui/ui.gyp:gfx_resources',
+          ],
+        }],
+      ],
     },
     {
       'target_name': 'libcef_static',
@@ -611,244 +496,143 @@
       ],
       'include_dirs': [
         '.',
-        '<(DEPTH)/third_party/WebKit/Source/WebKit/chromium/public',
+        # CEF grit resource includes
         '<(grit_out_dir)',
       ],
       'dependencies': [
-        'cef_extra_resources',
+        '<(DEPTH)/content/content.gyp:content_app',
+        '<(DEPTH)/content/content.gyp:content_browser',
+        '<(DEPTH)/content/content.gyp:content_common',
+        '<(DEPTH)/content/content.gyp:content_gpu',
+        '<(DEPTH)/content/content.gyp:content_plugin',
+        '<(DEPTH)/content/content.gyp:content_ppapi_plugin',
+        '<(DEPTH)/content/content.gyp:content_renderer',
+        '<(DEPTH)/content/content.gyp:content_utility',
+        '<(DEPTH)/content/content.gyp:content_worker',
+        '<(DEPTH)/content/content_resources.gyp:content_resources',
         '<(DEPTH)/base/base.gyp:base',
-        '<(DEPTH)/base/base.gyp:base_i18n',
+        '<(DEPTH)/base/third_party/dynamic_annotations/dynamic_annotations.gyp:dynamic_annotations',
         '<(DEPTH)/build/temp_gyp/googleurl.gyp:googleurl',
-        '<(DEPTH)/media/media.gyp:media',
+        '<(DEPTH)/ipc/ipc.gyp:ipc',
         '<(DEPTH)/net/net.gyp:net',
-        '<(DEPTH)/net/net.gyp:net_resources',
-        '<(DEPTH)/printing/printing.gyp:printing',
-        '<(DEPTH)/sdch/sdch.gyp:sdch',
         '<(DEPTH)/skia/skia.gyp:skia',
-        '<(DEPTH)/third_party/bzip2/bzip2.gyp:bzip2',
-        '<(DEPTH)/third_party/ffmpeg/ffmpeg.gyp:ffmpeg',
-        '<(DEPTH)/third_party/icu/icu.gyp:icui18n',
-        '<(DEPTH)/third_party/icu/icu.gyp:icuuc',
-        '<(DEPTH)/third_party/leveldatabase/leveldatabase.gyp:leveldatabase',
-        '<(DEPTH)/third_party/libjpeg_turbo/libjpeg.gyp:libjpeg',
-        '<(DEPTH)/third_party/libpng/libpng.gyp:libpng',
         '<(DEPTH)/third_party/libxml/libxml.gyp:libxml',
-        '<(DEPTH)/third_party/libxslt/libxslt.gyp:libxslt',
-        '<(DEPTH)/third_party/modp_b64/modp_b64.gyp:modp_b64',
-        '<(DEPTH)/third_party/WebKit/Source/WebCore/WebCore.gyp/WebCore.gyp:webcore',
         '<(DEPTH)/third_party/WebKit/Source/WebKit/chromium/WebKit.gyp:webkit',
-        '<(DEPTH)/third_party/zlib/zlib.gyp:zlib',
-        '<(DEPTH)/ui/ui.gyp:gfx_resources',
         '<(DEPTH)/ui/ui.gyp:ui',
         '<(DEPTH)/v8/tools/gyp/v8.gyp:v8',
         '<(DEPTH)/webkit/support/webkit_support.gyp:appcache',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:blob',
         '<(DEPTH)/webkit/support/webkit_support.gyp:database',
         '<(DEPTH)/webkit/support/webkit_support.gyp:fileapi',
         '<(DEPTH)/webkit/support/webkit_support.gyp:glue',
         '<(DEPTH)/webkit/support/webkit_support.gyp:quota',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_gpu',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_media',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_resources',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_strings',
-        '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_user_agent',
+        # Necessary to generate the grit include files.
+        'cef_pak',
       ],
       'sources': [
         '<@(includes_common)',
-        'libcef/browser_appcache_system.cc',
-        'libcef/browser_appcache_system.h',
-        'libcef/browser_database_system.cc',
-        'libcef/browser_database_system.h',
-        'libcef/browser_devtools_agent.cc',
-        'libcef/browser_devtools_agent.h',
-        'libcef/browser_devtools_callargs.cc',
-        'libcef/browser_devtools_callargs.h',
-        'libcef/browser_devtools_client.cc',
-        'libcef/browser_devtools_client.h',
-        'libcef/browser_devtools_scheme_handler.cc',
-        'libcef/browser_devtools_scheme_handler.h',
-        'libcef/browser_file_system.cc',
-        'libcef/browser_file_system.h',
-        'libcef/browser_file_writer.cc',
-        'libcef/browser_file_writer.h',
-        'libcef/browser_impl.cc',
-        'libcef/browser_impl.h',
-        'libcef/browser_navigation_controller.cc',
-        'libcef/browser_navigation_controller.h',
-        'libcef/browser_persistent_cookie_store.cc',
-        'libcef/browser_persistent_cookie_store.h',
-        'libcef/browser_request_context.cc',
-        'libcef/browser_request_context.h',
-        'libcef/browser_resource_loader_bridge.cc',
-        'libcef/browser_resource_loader_bridge.h',
-        'libcef/browser_settings.cc',
-        'libcef/browser_settings.h',
-        'libcef/browser_socket_stream_bridge.cc',
-        'libcef/browser_socket_stream_bridge.h',
-        'libcef/browser_webcookiejar_impl.cc',
-        'libcef/browser_webcookiejar_impl.h',
-        'libcef/browser_webblobregistry_impl.cc',
-        'libcef/browser_webblobregistry_impl.h',
-        'libcef/browser_webstoragearea_impl.cc',
-        'libcef/browser_webstoragearea_impl.h',
-        'libcef/browser_webstoragenamespace_impl.cc',
-        'libcef/browser_webstoragenamespace_impl.h',
-        'libcef/browser_webkit_glue.cc',
-        'libcef/browser_webkit_glue.h',
-        'libcef/browser_webkit_init.cc',
-        'libcef/browser_webkit_init.h',
-        'libcef/browser_webview_delegate.cc',
-        'libcef/browser_webview_delegate.h',
-        'libcef/browser_zoom_map.cc',
-        'libcef/browser_zoom_map.h',
-        'libcef/cef_context.cc',
-        'libcef/cef_context.h',
-        'libcef/cef_process.cc',
-        'libcef/cef_process.h',
-        'libcef/cef_process_io_thread.cc',
-        'libcef/cef_process_io_thread.h',
-        'libcef/cef_process_sub_thread.cc',
-        'libcef/cef_process_sub_thread.h',
-        'libcef/cef_process_ui_thread.cc',
-        'libcef/cef_process_ui_thread.h',
-        'libcef/cef_string_list.cc',
-        'libcef/cef_string_map.cc',
-        'libcef/cef_string_multimap.cc',
-        'libcef/cef_string_types.cc',
-        'libcef/cef_thread.cc',
-        'libcef/cef_thread.h',
-        'libcef/cef_time.cc',
-        'libcef/cef_time_util.h',
-        'libcef/command_line_impl.cc',
-        'libcef/cookie_impl.cc',
-        'libcef/drag_data_impl.cc',
-        'libcef/drag_data_impl.h',
-        'libcef/drag_download_file.cc',
-        'libcef/drag_download_file.h',
-        'libcef/drag_download_util.cc',
-        'libcef/drag_download_util.h',
-        'libcef/dom_storage_area.cc',
-        'libcef/dom_storage_area.h',
-        'libcef/dom_storage_common.h',
-        'libcef/dom_storage_context.cc',
-        'libcef/dom_storage_context.h',
-        'libcef/dom_storage_namespace.cc',
-        'libcef/dom_storage_namespace.h',
-        'libcef/dom_document_impl.cc',
-        'libcef/dom_document_impl.h',
-        'libcef/dom_event_impl.cc',
-        'libcef/dom_event_impl.h',
-        'libcef/dom_node_impl.cc',
-        'libcef/dom_node_impl.h',
-        'libcef/download_util.cc',
-        'libcef/download_util.h',
-        'libcef/external_protocol_handler.h',
-        'libcef/http_header_utils.cc',
-        'libcef/http_header_utils.h',
-        'libcef/nplugin_impl.cc',
-        'libcef/origin_whitelist_impl.cc',
-        'libcef/request_impl.cc',
-        'libcef/request_impl.h',
-        'libcef/response_impl.cc',
-        'libcef/response_impl.h',
-        'libcef/scheme_impl.cc',
-        'libcef/simple_clipboard_impl.cc',
-        'libcef/simple_clipboard_impl.h',
-        'libcef/storage_impl.cc',
-        'libcef/stream_impl.cc',
-        'libcef/stream_impl.h',
-        'libcef/task_impl.cc',
-        'libcef/tracker.h',
-        'libcef/url_impl.cc',
-        'libcef/v8_impl.cc',
-        'libcef/v8_impl.h',
-        'libcef/web_urlrequest_impl.cc',
-        'libcef/web_urlrequest_impl.h',
-        'libcef/webview_host.cc',
-        'libcef/webview_host.h',
-        'libcef/webwidget_host.cc',
-        'libcef/webwidget_host.h',
-        'libcef/xml_reader_impl.cc',
-        'libcef/xml_reader_impl.h',
-        'libcef/zip_reader_impl.cc',
-        'libcef/zip_reader_impl.h',
-        # DevTools resource IDs generated by grit
-        '<(grit_out_dir)/grit/devtools_resources_map.cc',
+        'libcef/browser/command_line_impl.cc',
+        'libcef/browser/browser_context.cc',
+        'libcef/browser/browser_context.h',
+        'libcef/browser/browser_impl.cc',
+        'libcef/browser/browser_impl.h',
+        'libcef/browser/browser_main.cc',
+        'libcef/browser/browser_main.h',
+        'libcef/browser/browser_message_filter.cc',
+        'libcef/browser/browser_message_filter.h',
+        'libcef/browser/browser_message_loop.cc',
+        'libcef/browser/browser_message_loop.h',
+        'libcef/browser/browser_settings.cc',
+        'libcef/browser/browser_settings.h',
+        'libcef/browser/content_browser_client.cc',
+        'libcef/browser/content_browser_client.h',
+        'libcef/browser/context.cc',
+        'libcef/browser/context.h',
+        'libcef/browser/devtools_delegate.cc',
+        'libcef/browser/devtools_delegate.h',
+        'libcef/browser/download_manager_delegate.cc',
+        'libcef/browser/download_manager_delegate.h',
+        'libcef/browser/frame_impl.cc',
+        'libcef/browser/frame_impl.h',
+        'libcef/browser/navigate_params.cc',
+        'libcef/browser/navigate_params.h',
+        'libcef/browser/origin_whitelist_impl.cc',
+        'libcef/browser/origin_whitelist_impl.h',
+        'libcef/browser/resource_context.cc',
+        'libcef/browser/resource_context.h',
+        'libcef/browser/resource_dispatcher_host_delegate.cc',
+        'libcef/browser/resource_dispatcher_host_delegate.h',
+        'libcef/browser/resource_request_job.cc',
+        'libcef/browser/resource_request_job.h',
+        'libcef/browser/request_impl.cc',
+        'libcef/browser/request_impl.h',
+        'libcef/browser/response_impl.cc',
+        'libcef/browser/response_impl.h',
+        'libcef/browser/scheme_impl.cc',
+        'libcef/browser/scheme_impl.h',
+        'libcef/browser/stream_impl.cc',
+        'libcef/browser/stream_impl.h',
+        'libcef/browser/string_list_impl.cc',
+        'libcef/browser/string_map_impl.cc',
+        'libcef/browser/string_multimap_impl.cc',
+        'libcef/browser/string_types_impl.cc',
+        'libcef/browser/task_impl.cc',
+        'libcef/browser/thread_util.h',
+        'libcef/browser/time_impl.cc',
+        'libcef/browser/time_util.h',
+        'libcef/browser/url_impl.cc',
+        'libcef/browser/url_network_delegate.cc',
+        'libcef/browser/url_network_delegate.h',
+        'libcef/browser/url_request_context_getter.cc',
+        'libcef/browser/url_request_context_getter.h',
+        'libcef/browser/url_request_interceptor.cc',
+        'libcef/browser/url_request_interceptor.h',
+        'libcef/browser/xml_reader_impl.cc',
+        'libcef/browser/xml_reader_impl.h',
+        'libcef/browser/zip_reader_impl.cc',
+        'libcef/browser/zip_reader_impl.h',
+        'libcef/common/cef_message_generator.cc',
+        'libcef/common/cef_message_generator.h',
+        'libcef/common/cef_messages.h',
+        'libcef/common/content_client.cc',
+        'libcef/common/content_client.h',
+        'libcef/common/http_header_utils.cc',
+        'libcef/common/http_header_utils.h',
+        'libcef/common/main_delegate.cc',
+        'libcef/common/main_delegate.h',
+        'libcef/plugin/content_plugin_client.cc',
+        'libcef/plugin/content_plugin_client.h',
+        'libcef/renderer/content_renderer_client.cc',
+        'libcef/renderer/content_renderer_client.h',
+        'libcef/renderer/render_message_filter.cc',
+        'libcef/renderer/render_message_filter.h',
+        'libcef/renderer/render_view_observer.cc',
+        'libcef/renderer/render_view_observer.h',
+        'libcef/utility/content_utility_client.cc',
+        'libcef/utility/content_utility_client.h',
+        # TabContentsView implementations
+        '<(DEPTH)/content/browser/tab_contents/tab_contents_view_win.cc',
+        '<(DEPTH)/content/browser/tab_contents/tab_contents_view_win.h',
       ],
       'conditions': [
         ['OS=="win"', {
-          'dependencies': [
-            '<(DEPTH)/breakpad/breakpad.gyp:breakpad_handler',
-            '<(DEPTH)/third_party/angle/src/build_angle.gyp:libEGL',
-            '<(DEPTH)/third_party/angle/src/build_angle.gyp:libGLESv2',
-            '<(DEPTH)/ui/views/views.gyp:views',
-          ],
           'sources': [
             '<@(includes_win)',
-            'libcef/browser_drag_delegate_win.cc',
-            'libcef/browser_drag_delegate_win.h',
-            'libcef/browser_impl_win.cc',
-            'libcef/browser_webkit_glue_win.cc',
-            'libcef/browser_webview_delegate_win.cc',
-            'libcef/cef_process_ui_thread_win.cc',
-            'libcef/external_protocol_handler_win.cc',
-            'libcef/printing/print_settings.cc',
-            'libcef/printing/print_settings.h',
-            'libcef/printing/win_printing_context.cc',
-            'libcef/printing/win_printing_context.h',
-            'libcef/web_drag_source_win.cc',
-            'libcef/web_drag_source_win.h',
-            'libcef/web_drag_utils_win.cc',
-            'libcef/web_drag_utils_win.h',
-            'libcef/web_drop_target_win.cc',
-            'libcef/web_drop_target_win.h',
-            'libcef/webview_host_win.cc',
-            'libcef/webwidget_host_win.cc',
+            'libcef/browser/browser_impl_win.cc',
+            'libcef/browser/browser_main_win.cc',
           ],
         }],
         [ 'OS=="mac"', {
           'sources': [
             '<@(includes_mac)',
-            'libcef/browser_impl_mac.mm',
-            'libcef/browser_webkit_glue_mac.mm',
-            'libcef/browser_webview_delegate_mac.mm',
-            'libcef/browser_webview_mac.h',
-            'libcef/browser_webview_mac.mm',
-            'libcef/cef_process_ui_thread_mac.mm',
-            'libcef/external_popup_menu_mac.h',
-            'libcef/external_popup_menu_mac.mm',
-            'libcef/external_protocol_handler_mac.mm',
-            'libcef/webview_host_mac.mm',
-            'libcef/webwidget_host_mac.mm',
-            'libcef/web_drag_source_mac.h',
-            'libcef/web_drag_source_mac.mm',
-            'libcef/web_drag_utils_mac.h',
-            'libcef/web_drag_utils_mac.mm',
-            'libcef/web_drop_target_mac.h',
-            'libcef/web_drop_target_mac.mm',
-            # Build necessary Mozilla sources
-            '<(DEPTH)/third_party/mozilla/NSPasteboard+Utils.h',
-            '<(DEPTH)/third_party/mozilla/NSPasteboard+Utils.mm',
-            '<(DEPTH)/third_party/mozilla/NSString+Utils.h',
-            '<(DEPTH)/third_party/mozilla/NSString+Utils.mm',
-            '<(DEPTH)/third_party/mozilla/NSURL+Utils.h',
-            '<(DEPTH)/third_party/mozilla/NSURL+Utils.m',
+            'libcef/browser/browser_impl_mac.mm',
+            'libcef/browser/browser_main_mac.mm',
           ],
         }],
         [ 'OS=="linux" or OS=="freebsd" or OS=="openbsd"', {
           'sources': [
             '<@(includes_linux)',
-            'libcef/browser_impl_gtk.cc',
-            'libcef/browser_webkit_glue_gtk.cc',
-            'libcef/browser_webview_delegate_gtk.cc',
-            'libcef/cef_process_ui_thread_gtk.cc',
-            'libcef/external_protocol_handler_gtk.cc',
-            'libcef/webview_host_gtk.cc',
-            'libcef/webwidget_host_gtk.cc',
-            'libcef/web_drag_source_gtk.cc',
-            'libcef/web_drag_source_gtk.h',
-            'libcef/web_drop_target_gtk.cc',
-            'libcef/web_drop_target_gtk.h',
+            'libcef/browser/browser_impl_gtk.cc',
+            'libcef/browser/browser_main_gtk.cc',
           ],
         }],
       ],

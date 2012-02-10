@@ -55,6 +55,14 @@ extern "C" {
 #endif
 
 ///
+// Structure representing CefExecuteProcess arguments.
+///
+typedef struct _cef_main_args_t {
+  int argc;
+  const char** argv;
+} cef_main_args_t;
+
+///
 // Supported graphics implementations.
 ///
 enum cef_graphics_implementation_t {
@@ -66,26 +74,19 @@ enum cef_graphics_implementation_t {
 // Class representing window information.
 ///
 typedef struct _cef_window_info_t {
-  cef_string_t m_windowName;
-  int m_x;
-  int m_y;
-  int m_nWidth;
-  int m_nHeight;
-  int m_bHidden;
+  cef_string_t window_name;
+  int x;
+  int y;
+  int width;
+  int height;
+  int hidden;
 
   // NSView pointer for the parent view.
-  cef_window_handle_t m_ParentView;
+  cef_window_handle_t parent_view;
 
   // NSView pointer for the new browser view.
-  cef_window_handle_t m_View;
+  cef_window_handle_t view;
 } cef_window_info_t;
-
-///
-// Class representing print context information.
-///
-typedef struct _cef_print_info_t {
-  double m_Scale;
-} cef_print_info_t;
 
 #ifdef __cplusplus
 }

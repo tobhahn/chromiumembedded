@@ -1,4 +1,4 @@
-// Copyright (c) 2011 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2012 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -45,17 +45,30 @@
 class CefApp;
 
 ///
+// This function should be called from the application entry point function to
+// execute a secondary process. It can be used to run secondary processes from
+// the browser client executable (default behavior) or from a separate
+// executable specified by the CefSettings.secondary_executable value. If called
+// for the browser process (identified by no "type" command-line value) it will
+// return immediately with a value of -1. If called for a recognized secondary
+// process it will block until the process should exit and then return the
+// process exit code.
+///
+/*--cef()--*/
+int CefExecuteProcess(const CefMainArgs& args);
+
+///
 // This function should be called on the main application thread to initialize
-// CEF when the application is started. The |application| parameter may be
-// empty. A return value of true indicates that it succeeded and false indicates
-// that it failed.
+// the CEF browser process. The |application| parameter may be empty. A return
+// value of true indicates that it succeeded and false indicates that it failed.
 ///
 /*--cef(revision_check,optional_param=application)--*/
-bool CefInitialize(const CefSettings& settings, CefRefPtr<CefApp> application);
+bool CefInitialize(const CefMainArgs& args, const CefSettings& settings,
+                   CefRefPtr<CefApp> application);
 
 ///
 // This function should be called on the main application thread to shut down
-// CEF before the application exits.
+// the CEF browser process before the application exits.
 ///
 /*--cef()--*/
 void CefShutdown();
@@ -89,7 +102,6 @@ void CefRunMessageLoop();
 ///
 /*--cef()--*/
 void CefQuitMessageLoop();
-
 
 ///
 // Implement this interface to provide handler implementations.

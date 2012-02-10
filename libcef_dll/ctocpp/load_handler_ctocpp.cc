@@ -62,37 +62,35 @@ void CefLoadHandlerCToCpp::OnLoadEnd(CefRefPtr<CefBrowser> browser,
       httpStatusCode);
 }
 
-bool CefLoadHandlerCToCpp::OnLoadError(CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString& failedUrl,
-    CefString& errorText) {
+void CefLoadHandlerCToCpp::OnLoadError(CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString& errorText,
+    const CefString& failedUrl) {
   if (CEF_MEMBER_MISSING(struct_, on_load_error))
-    return false;
+    return;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: browser; type: refptr_diff
   DCHECK(browser.get());
   if (!browser.get())
-    return false;
+    return;
   // Verify param: frame; type: refptr_diff
   DCHECK(frame.get());
   if (!frame.get())
-    return false;
+    return;
   // Verify param: failedUrl; type: string_byref_const
   DCHECK(!failedUrl.empty());
   if (failedUrl.empty())
-    return false;
+    return;
+  // Unverified params: errorText
 
   // Execute
-  int _retval = struct_->on_load_error(struct_,
+  struct_->on_load_error(struct_,
       CefBrowserCppToC::Wrap(browser),
       CefFrameCppToC::Wrap(frame),
       errorCode,
-      failedUrl.GetStruct(),
-      errorText.GetWritableStruct());
-
-  // Return type: bool
-  return _retval?true:false;
+      errorText.GetStruct(),
+      failedUrl.GetStruct());
 }
 
 

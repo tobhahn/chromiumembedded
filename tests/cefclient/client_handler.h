@@ -9,7 +9,6 @@
 #include <map>
 #include <string>
 #include "include/cef_client.h"
-#include "cefclient/download_handler.h"
 #include "cefclient/util.h"
 
 
@@ -23,14 +22,7 @@ class ClientHandler : public CefClient,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
                       public CefRequestHandler,
-                      public CefDisplayHandler,
-                      public CefFocusHandler,
-                      public CefKeyboardHandler,
-                      public CefPrintHandler,
-                      public CefV8ContextHandler,
-                      public CefDragHandler,
-                      public CefPermissionHandler,
-                      public DownloadListener {
+                      public CefDisplayHandler {
  public:
   ClientHandler();
   virtual ~ClientHandler();
@@ -46,24 +38,6 @@ class ClientHandler : public CefClient,
     return this;
   }
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE {
-    return this;
-  }
-  virtual CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE {
-    return this;
-  }
-  virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE {
-    return this;
-  }
-  virtual CefRefPtr<CefPrintHandler> GetPrintHandler() OVERRIDE {
-    return this;
-  }
-  virtual CefRefPtr<CefV8ContextHandler> GetV8ContextHandler() OVERRIDE {
-    return this;
-  }
-  virtual CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE {
-    return this;
-  }
-  virtual CefRefPtr<CefPermissionHandler> GetPermissionHandler() OVERRIDE {
     return this;
   }
 
@@ -84,30 +58,23 @@ class ClientHandler : public CefClient,
   virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
                          CefRefPtr<CefFrame> frame,
                          int httpStatusCode) OVERRIDE;
-  virtual bool OnLoadError(CefRefPtr<CefBrowser> browser,
+  virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
                            ErrorCode errorCode,
-                           const CefString& failedUrl,
-                           CefString& errorText) OVERRIDE;
+                           const CefString& errorText,
+                           const CefString& failedUrl) OVERRIDE;
 
   // CefRequestHandler methods
-  virtual bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-                                   CefRefPtr<CefRequest> request,
-                                   CefString& redirectUrl,
-                                   CefRefPtr<CefStreamReader>& resourceStream,
-                                   CefRefPtr<CefResponse> response,
-                                   int loadFlags) OVERRIDE;
-  virtual bool GetDownloadHandler(CefRefPtr<CefBrowser> browser,
-                                  const CefString& mimeType,
-                                  const CefString& fileName,
-                                  int64 contentLength,
-                                  CefRefPtr<CefDownloadHandler>& handler)
-                                  OVERRIDE;
+  virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefRequest> request) OVERRIDE;
 
   // CefDisplayHandler methods
-  virtual void OnNavStateChange(CefRefPtr<CefBrowser> browser,
-                                bool canGoBack,
-                                bool canGoForward) OVERRIDE;
+  virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                    bool isLoading,
+                                    bool canGoBack,
+                                    bool canGoForward) OVERRIDE;
   virtual void OnAddressChange(CefRefPtr<CefBrowser> browser,
                                CefRefPtr<CefFrame> frame,
                                const CefString& url) OVERRIDE;
@@ -117,56 +84,6 @@ class ClientHandler : public CefClient,
                                 const CefString& message,
                                 const CefString& source,
                                 int line) OVERRIDE;
-
-  // CefFocusHandler methods.
-  virtual void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
-                                    CefRefPtr<CefFrame> frame,
-                                    CefRefPtr<CefDOMNode> node) OVERRIDE;
-
-  // CefKeyboardHandler methods.
-  virtual bool OnKeyEvent(CefRefPtr<CefBrowser> browser,
-                          KeyEventType type,
-                          int code,
-                          int modifiers,
-                          bool isSystemKey,
-                          bool isAfterJavaScript) OVERRIDE;
-
-  // CefPrintHandler methods.
-  virtual bool GetPrintHeaderFooter(CefRefPtr<CefBrowser> browser,
-                                    CefRefPtr<CefFrame> frame,
-                                    const CefPrintInfo& printInfo,
-                                    const CefString& url,
-                                    const CefString& title,
-                                    int currentPage,
-                                    int maxPages,
-                                    CefString& topLeft,
-                                    CefString& topCenter,
-                                    CefString& topRight,
-                                    CefString& bottomLeft,
-                                    CefString& bottomCenter,
-                                    CefString& bottomRight) OVERRIDE;
-
-  // CefV8ContextHandler methods
-  virtual void OnContextCreated(CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefFrame> frame,
-                                CefRefPtr<CefV8Context> context) OVERRIDE;
-
-  // CefDragHandler methods.
-  virtual bool OnDragStart(CefRefPtr<CefBrowser> browser,
-                           CefRefPtr<CefDragData> dragData,
-                           DragOperationsMask mask) OVERRIDE;
-  virtual bool OnDragEnter(CefRefPtr<CefBrowser> browser,
-                           CefRefPtr<CefDragData> dragData,
-                           DragOperationsMask mask) OVERRIDE;
-
-  // CefPermissionHandler methods.
-  virtual bool OnBeforeScriptExtensionLoad(CefRefPtr<CefBrowser> browser,
-                                       CefRefPtr<CefFrame> frame,
-                                       const CefString& extensionName) OVERRIDE;
-
-  // DownloadListener methods
-  virtual void NotifyDownloadComplete(const CefString& fileName) OVERRIDE;
-  virtual void NotifyDownloadError(const CefString& fileName) OVERRIDE;
 
   void SetMainHwnd(CefWindowHandle hwnd);
   CefWindowHandle GetMainHwnd() { return m_MainHwnd; }
@@ -183,10 +100,6 @@ class ClientHandler : public CefClient,
 
   void SetLastDownloadFile(const std::string& fileName);
   std::string GetLastDownloadFile();
-
-  // DOM visitors will be called after the associated path is loaded.
-  void AddDOMVisitor(const std::string& path, CefRefPtr<CefDOMVisitor> visitor);
-  CefRefPtr<CefDOMVisitor> GetDOMVisitor(const std::string& path);
 
   // Send a notification to the application. Notifications should not block the
   // caller.
@@ -225,10 +138,6 @@ class ClientHandler : public CefClient,
 
   // Support for downloading files.
   std::string m_LastDownloadFile;
-
-  // Support for DOM visitors.
-  typedef std::map<std::string, CefRefPtr<CefDOMVisitor> > DOMVisitorMap;
-  DOMVisitorMap m_DOMVisitors;
 
   // True if a form element currently has focus
   bool m_bFormElementHasFocus;

@@ -10,22 +10,20 @@
 // for more information.
 //
 
+#include "libcef_dll/cpptoc/auth_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/browser_cpptoc.h"
 #include "libcef_dll/cpptoc/frame_cpptoc.h"
 #include "libcef_dll/cpptoc/request_cpptoc.h"
-#include "libcef_dll/cpptoc/response_cpptoc.h"
-#include "libcef_dll/cpptoc/stream_reader_cpptoc.h"
-#include "libcef_dll/ctocpp/content_filter_ctocpp.h"
-#include "libcef_dll/ctocpp/download_handler_ctocpp.h"
 #include "libcef_dll/ctocpp/request_handler_ctocpp.h"
+#include "libcef_dll/ctocpp/resource_handler_ctocpp.h"
 
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-bool CefRequestHandlerCToCpp::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, NavType navType,
-    bool isRedirect) {
-  if (CEF_MEMBER_MISSING(struct_, on_before_browse))
+bool CefRequestHandlerCToCpp::OnBeforeResourceLoad(
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request) {
+  if (CEF_MEMBER_MISSING(struct_, on_before_resource_load))
     return false;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -44,69 +42,48 @@ bool CefRequestHandlerCToCpp::OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
     return false;
 
   // Execute
-  int _retval = struct_->on_before_browse(struct_,
+  int _retval = struct_->on_before_resource_load(struct_,
       CefBrowserCppToC::Wrap(browser),
       CefFrameCppToC::Wrap(frame),
-      CefRequestCppToC::Wrap(request),
-      navType,
-      isRedirect);
+      CefRequestCppToC::Wrap(request));
 
   // Return type: bool
   return _retval?true:false;
 }
 
-bool CefRequestHandlerCToCpp::OnBeforeResourceLoad(
-    CefRefPtr<CefBrowser> browser, CefRefPtr<CefRequest> request,
-    CefString& redirectUrl, CefRefPtr<CefStreamReader>& resourceStream,
-    CefRefPtr<CefResponse> response, int loadFlags) {
-  if (CEF_MEMBER_MISSING(struct_, on_before_resource_load))
-    return false;
+CefRefPtr<CefResourceHandler> CefRequestHandlerCToCpp::GetResourceHandler(
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request) {
+  if (CEF_MEMBER_MISSING(struct_, get_resource_handler))
+    return NULL;
 
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Verify param: browser; type: refptr_diff
   DCHECK(browser.get());
   if (!browser.get())
-    return false;
+    return NULL;
+  // Verify param: frame; type: refptr_diff
+  DCHECK(frame.get());
+  if (!frame.get())
+    return NULL;
   // Verify param: request; type: refptr_diff
   DCHECK(request.get());
   if (!request.get())
-    return false;
-  // Verify param: response; type: refptr_diff
-  DCHECK(response.get());
-  if (!response.get())
-    return false;
-
-  // Translate param: resourceStream; type: refptr_diff_byref
-  cef_stream_reader_t* resourceStreamStruct = NULL;
-  if (resourceStream.get())
-    resourceStreamStruct = CefStreamReaderCppToC::Wrap(resourceStream);
-  cef_stream_reader_t* resourceStreamOrig = resourceStreamStruct;
+    return NULL;
 
   // Execute
-  int _retval = struct_->on_before_resource_load(struct_,
+  cef_resource_handler_t* _retval = struct_->get_resource_handler(struct_,
       CefBrowserCppToC::Wrap(browser),
-      CefRequestCppToC::Wrap(request),
-      redirectUrl.GetWritableStruct(),
-      &resourceStreamStruct,
-      CefResponseCppToC::Wrap(response),
-      loadFlags);
+      CefFrameCppToC::Wrap(frame),
+      CefRequestCppToC::Wrap(request));
 
-  // Restore param:resourceStream; type: refptr_diff_byref
-  if (resourceStreamStruct) {
-    if (resourceStreamStruct != resourceStreamOrig) {
-      resourceStream = CefStreamReaderCppToC::Unwrap(resourceStreamStruct);
-    }
-  } else {
-    resourceStream = NULL;
-  }
-
-  // Return type: bool
-  return _retval?true:false;
+  // Return type: refptr_same
+  return CefResourceHandlerCToCpp::Wrap(_retval);
 }
 
 void CefRequestHandlerCToCpp::OnResourceRedirect(CefRefPtr<CefBrowser> browser,
-    const CefString& old_url, CefString& new_url) {
+    CefRefPtr<CefFrame> frame, const CefString& old_url, CefString& new_url) {
   if (CEF_MEMBER_MISSING(struct_, on_resource_redirect))
     return;
 
@@ -116,6 +93,10 @@ void CefRequestHandlerCToCpp::OnResourceRedirect(CefRefPtr<CefBrowser> browser,
   DCHECK(browser.get());
   if (!browser.get())
     return;
+  // Verify param: frame; type: refptr_diff
+  DCHECK(frame.get());
+  if (!frame.get())
+    return;
   // Verify param: old_url; type: string_byref_const
   DCHECK(!old_url.empty());
   if (old_url.empty())
@@ -124,137 +105,15 @@ void CefRequestHandlerCToCpp::OnResourceRedirect(CefRefPtr<CefBrowser> browser,
   // Execute
   struct_->on_resource_redirect(struct_,
       CefBrowserCppToC::Wrap(browser),
+      CefFrameCppToC::Wrap(frame),
       old_url.GetStruct(),
       new_url.GetWritableStruct());
 }
 
-void CefRequestHandlerCToCpp::OnResourceResponse(CefRefPtr<CefBrowser> browser,
-    const CefString& url, CefRefPtr<CefResponse> response,
-    CefRefPtr<CefContentFilter>& filter) {
-  if (CEF_MEMBER_MISSING(struct_, on_resource_response))
-    return;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser.get());
-  if (!browser.get())
-    return;
-  // Verify param: url; type: string_byref_const
-  DCHECK(!url.empty());
-  if (url.empty())
-    return;
-  // Verify param: response; type: refptr_diff
-  DCHECK(response.get());
-  if (!response.get())
-    return;
-
-  // Translate param: filter; type: refptr_same_byref
-  cef_content_filter_t* filterStruct = NULL;
-  if (filter.get())
-    filterStruct = CefContentFilterCToCpp::Unwrap(filter);
-  cef_content_filter_t* filterOrig = filterStruct;
-
-  // Execute
-  struct_->on_resource_response(struct_,
-      CefBrowserCppToC::Wrap(browser),
-      url.GetStruct(),
-      CefResponseCppToC::Wrap(response),
-      &filterStruct);
-
-  // Restore param:filter; type: refptr_same_byref
-  if (filterStruct) {
-    if (filterStruct != filterOrig) {
-      filter = CefContentFilterCToCpp::Wrap(filterStruct);
-    }
-  } else {
-    filter = NULL;
-  }
-}
-
-bool CefRequestHandlerCToCpp::OnProtocolExecution(CefRefPtr<CefBrowser> browser,
-    const CefString& url, bool& allowOSExecution) {
-  if (CEF_MEMBER_MISSING(struct_, on_protocol_execution))
-    return false;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser.get());
-  if (!browser.get())
-    return false;
-  // Verify param: url; type: string_byref_const
-  DCHECK(!url.empty());
-  if (url.empty())
-    return false;
-
-  // Translate param: allowOSExecution; type: bool_byref
-  int allowOSExecutionInt = allowOSExecution;
-
-  // Execute
-  int _retval = struct_->on_protocol_execution(struct_,
-      CefBrowserCppToC::Wrap(browser),
-      url.GetStruct(),
-      &allowOSExecutionInt);
-
-  // Restore param:allowOSExecution; type: bool_byref
-  allowOSExecution = allowOSExecutionInt?true:false;
-
-  // Return type: bool
-  return _retval?true:false;
-}
-
-bool CefRequestHandlerCToCpp::GetDownloadHandler(CefRefPtr<CefBrowser> browser,
-    const CefString& mimeType, const CefString& fileName, int64 contentLength,
-    CefRefPtr<CefDownloadHandler>& handler) {
-  if (CEF_MEMBER_MISSING(struct_, get_download_handler))
-    return false;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: browser; type: refptr_diff
-  DCHECK(browser.get());
-  if (!browser.get())
-    return false;
-  // Verify param: mimeType; type: string_byref_const
-  DCHECK(!mimeType.empty());
-  if (mimeType.empty())
-    return false;
-  // Verify param: fileName; type: string_byref_const
-  DCHECK(!fileName.empty());
-  if (fileName.empty())
-    return false;
-
-  // Translate param: handler; type: refptr_same_byref
-  cef_download_handler_t* handlerStruct = NULL;
-  if (handler.get())
-    handlerStruct = CefDownloadHandlerCToCpp::Unwrap(handler);
-  cef_download_handler_t* handlerOrig = handlerStruct;
-
-  // Execute
-  int _retval = struct_->get_download_handler(struct_,
-      CefBrowserCppToC::Wrap(browser),
-      mimeType.GetStruct(),
-      fileName.GetStruct(),
-      contentLength,
-      &handlerStruct);
-
-  // Restore param:handler; type: refptr_same_byref
-  if (handlerStruct) {
-    if (handlerStruct != handlerOrig) {
-      handler = CefDownloadHandlerCToCpp::Wrap(handlerStruct);
-    }
-  } else {
-    handler = NULL;
-  }
-
-  // Return type: bool
-  return _retval?true:false;
-}
-
 bool CefRequestHandlerCToCpp::GetAuthCredentials(CefRefPtr<CefBrowser> browser,
-    bool isProxy, const CefString& host, int port, const CefString& realm,
-    const CefString& scheme, CefString& username, CefString& password) {
+    CefRefPtr<CefFrame> frame, bool isProxy, const CefString& host, int port,
+    const CefString& realm, const CefString& scheme,
+    CefRefPtr<CefAuthCallback> callback) {
   if (CEF_MEMBER_MISSING(struct_, get_auth_credentials))
     return false;
 
@@ -264,6 +123,10 @@ bool CefRequestHandlerCToCpp::GetAuthCredentials(CefRefPtr<CefBrowser> browser,
   DCHECK(browser.get());
   if (!browser.get())
     return false;
+  // Verify param: frame; type: refptr_diff
+  DCHECK(frame.get());
+  if (!frame.get())
+    return false;
   // Verify param: host; type: string_byref_const
   DCHECK(!host.empty());
   if (host.empty())
@@ -272,18 +135,22 @@ bool CefRequestHandlerCToCpp::GetAuthCredentials(CefRefPtr<CefBrowser> browser,
   DCHECK(!scheme.empty());
   if (scheme.empty())
     return false;
+  // Verify param: callback; type: refptr_diff
+  DCHECK(callback.get());
+  if (!callback.get())
+    return false;
   // Unverified params: realm
 
   // Execute
   int _retval = struct_->get_auth_credentials(struct_,
       CefBrowserCppToC::Wrap(browser),
+      CefFrameCppToC::Wrap(frame),
       isProxy,
       host.GetStruct(),
       port,
       realm.GetStruct(),
       scheme.GetStruct(),
-      username.GetWritableStruct(),
-      password.GetWritableStruct());
+      CefAuthCallbackCppToC::Wrap(callback));
 
   // Return type: bool
   return _retval?true:false;

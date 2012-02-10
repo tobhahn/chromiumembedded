@@ -112,20 +112,20 @@ typedef struct _cef_request_t {
       cef_string_multimap_t headerMap);
 
   ///
-  // Get the flags used in combination with cef_web_urlrequest_t.
+  // Get the flags used in combination with CefWebURLRequest.
   ///
   enum cef_weburlrequest_flags_t (CEF_CALLBACK *get_flags)(
       struct _cef_request_t* self);
 
   ///
-  // Set the flags used in combination with cef_web_urlrequest_t.
+  // Set the flags used in combination with CefWebURLRequest.
   ///
   void (CEF_CALLBACK *set_flags)(struct _cef_request_t* self,
       enum cef_weburlrequest_flags_t flags);
 
   ///
   // Set the URL to the first party for cookies used in combination with
-  // cef_web_urlrequest_t.
+  // CefWebURLRequest.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t (CEF_CALLBACK *get_first_party_for_cookies)(
@@ -133,7 +133,7 @@ typedef struct _cef_request_t {
 
   ///
   // Get the URL to the first party for cookies used in combination with
-  // cef_web_urlrequest_t.
+  // CefWebURLRequest.
   ///
   void (CEF_CALLBACK *set_first_party_for_cookies)(struct _cef_request_t* self,
       const cef_string_t* url);

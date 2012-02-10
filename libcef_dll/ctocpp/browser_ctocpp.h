@@ -43,6 +43,7 @@ class CefBrowserCToCpp
   virtual void GoBack() OVERRIDE;
   virtual bool CanGoForward() OVERRIDE;
   virtual void GoForward() OVERRIDE;
+  virtual bool IsLoading() OVERRIDE;
   virtual void Reload() OVERRIDE;
   virtual void ReloadIgnoreCache() OVERRIDE;
   virtual void StopLoad() OVERRIDE;
@@ -54,7 +55,10 @@ class CefBrowserCToCpp
   virtual CefRefPtr<CefClient> GetClient() OVERRIDE;
   virtual CefRefPtr<CefFrame> GetMainFrame() OVERRIDE;
   virtual CefRefPtr<CefFrame> GetFocusedFrame() OVERRIDE;
+  virtual CefRefPtr<CefFrame> GetFrame(int64 identifier) OVERRIDE;
   virtual CefRefPtr<CefFrame> GetFrame(const CefString& name) OVERRIDE;
+  virtual size_t GetFrameCount() OVERRIDE;
+  virtual void GetFrameIdentifiers(std::vector<int64>& identifiers) OVERRIDE;
   virtual void GetFrameNames(std::vector<CefString>& names) OVERRIDE;
   virtual void Find(int identifier, const CefString& searchText, bool forward,
       bool matchCase, bool findNext) OVERRIDE;
@@ -64,22 +68,6 @@ class CefBrowserCToCpp
   virtual void ClearHistory() OVERRIDE;
   virtual void ShowDevTools() OVERRIDE;
   virtual void CloseDevTools() OVERRIDE;
-  virtual bool IsWindowRenderingDisabled() OVERRIDE;
-  virtual bool GetSize(PaintElementType type, int& width, int& height) OVERRIDE;
-  virtual void SetSize(PaintElementType type, int width, int height) OVERRIDE;
-  virtual bool IsPopupVisible() OVERRIDE;
-  virtual void HidePopup() OVERRIDE;
-  virtual void Invalidate(const CefRect& dirtyRect) OVERRIDE;
-  virtual bool GetImage(PaintElementType type, int width, int height,
-      void* buffer) OVERRIDE;
-  virtual void SendKeyEvent(KeyType type, int key, int modifiers, bool sysChar,
-      bool imeChar) OVERRIDE;
-  virtual void SendMouseClickEvent(int x, int y, MouseButtonType type,
-      bool mouseUp, int clickCount) OVERRIDE;
-  virtual void SendMouseMoveEvent(int x, int y, bool mouseLeave) OVERRIDE;
-  virtual void SendMouseWheelEvent(int x, int y, int delta) OVERRIDE;
-  virtual void SendFocusEvent(bool setFocus) OVERRIDE;
-  virtual void SendCaptureLostEvent() OVERRIDE;
 };
 
 #endif  // USING_CEF_SHARED

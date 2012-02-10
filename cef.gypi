@@ -8,8 +8,6 @@
       # Directory for CEF source files.
       [ 'OS=="win"', {
         'cef_directory' : '<!(echo %CEF_DIRECTORY%)',
-        # Keep the build output in the CEF directory.
-        'build_dir_prefix': '..\\<!(echo %CEF_DIRECTORY%)\\',
         # Use SKIA text rendering for transparency support.
         'enable_skia_text': 1,
       }, { # OS!="win"

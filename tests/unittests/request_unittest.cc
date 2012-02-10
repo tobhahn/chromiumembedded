@@ -6,13 +6,14 @@
 #include "tests/unittests/test_handler.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
+namespace {
 
 // Verify that CefRequest::HeaderMap objects are equal
 // If |allowExtras| is true then additional header fields will be allowed in
 // |map2|.
-static void VerifyMapEqual(CefRequest::HeaderMap &map1,
-                           CefRequest::HeaderMap &map2,
-                           bool allowExtras) {
+void VerifyMapEqual(CefRequest::HeaderMap &map1,
+                    CefRequest::HeaderMap &map2,
+                    bool allowExtras) {
   if (!allowExtras)
     ASSERT_EQ(map1.size(), map2.size());
   CefRequest::HeaderMap::const_iterator it1, it2;
@@ -25,8 +26,8 @@ static void VerifyMapEqual(CefRequest::HeaderMap &map1,
 }
 
 // Verify that CefPostDataElement objects are equal
-static void VerifyPostDataElementEqual(CefRefPtr<CefPostDataElement> elem1,
-                                       CefRefPtr<CefPostDataElement> elem2) {
+void VerifyPostDataElementEqual(CefRefPtr<CefPostDataElement> elem1,
+                                CefRefPtr<CefPostDataElement> elem2) {
   ASSERT_EQ(elem1->GetType(), elem2->GetType());
   switch (elem1->GetType()) {
     case PDE_TYPE_BYTES: {
@@ -49,8 +50,8 @@ static void VerifyPostDataElementEqual(CefRefPtr<CefPostDataElement> elem1,
 }
 
 // Verify that CefPostData objects are equal
-static void VerifyPostDataEqual(CefRefPtr<CefPostData> postData1,
-                                CefRefPtr<CefPostData> postData2) {
+void VerifyPostDataEqual(CefRefPtr<CefPostData> postData1,
+                         CefRefPtr<CefPostData> postData2) {
   ASSERT_TRUE(!(postData1.get()) == !(postData2.get()));
   ASSERT_EQ(postData1->GetElementCount(), postData2->GetElementCount());
 
@@ -68,9 +69,9 @@ static void VerifyPostDataEqual(CefRefPtr<CefPostData> postData1,
 // Verify that CefRequest objects are equal
 // If |allowExtras| is true then additional header fields will be allowed in
 // |request2|.
-static void VerifyRequestEqual(CefRefPtr<CefRequest> request1,
-                               CefRefPtr<CefRequest> request2,
-                               bool allowExtras) {
+void VerifyRequestEqual(CefRefPtr<CefRequest> request1,
+                        CefRefPtr<CefRequest> request2,
+                        bool allowExtras) {
   ASSERT_EQ(request1->GetURL(), request2->GetURL());
   ASSERT_EQ(request1->GetMethod(), request2->GetMethod());
 
@@ -81,6 +82,8 @@ static void VerifyRequestEqual(CefRefPtr<CefRequest> request1,
 
   VerifyPostDataEqual(request1->GetPostData(), request2->GetPostData());
 }
+
+}  // namespace
 
 // Verify Set/Get methods for CefRequest, CefPostData and CefPostDataElement.
 TEST(RequestTest, SetGet) {
@@ -178,7 +181,9 @@ TEST(RequestTest, SetGet) {
   VerifyPostDataEqual(postData, request->GetPostData());
 }
 
-static void CreateRequest(CefRefPtr<CefRequest>& request) {
+namespace {
+
+void CreateRequest(CefRefPtr<CefRequest>& request) {
   request = CefRequest::CreateRequest();
   ASSERT_TRUE(request.get() != NULL);
 
@@ -196,21 +201,12 @@ static void CreateRequest(CefRefPtr<CefRequest>& request) {
   CefRefPtr<CefPostDataElement> element1(
       CefPostDataElement::CreatePostDataElement());
   ASSERT_TRUE(element1.get() != NULL);
-  element1->SetToFile("c:\\path\\to\\file.ext");
-  postData->AddElement(element1);
-
-  CefRefPtr<CefPostDataElement> element2(
-      CefPostDataElement::CreatePostDataElement());
-  ASSERT_TRUE(element2.get() != NULL);
   char bytes[] = "Test Bytes";
-  element2->SetToBytes(sizeof(bytes), bytes);
-  postData->AddElement(element2);
+  element1->SetToBytes(sizeof(bytes), bytes);
+  postData->AddElement(element1);
 
   request->SetPostData(postData);
 }
-
-bool g_RequestSendRecvTestHandlerHandleBeforeBrowseCalled;
-bool g_RequestSendRecvTestHandlerHandleBeforeResourceLoadCalled;
 
 class RequestSendRecvTestHandler : public TestHandler {
  public:
@@ -221,7 +217,7 @@ class RequestSendRecvTestHandler : public TestHandler {
     CreateRequest(request_);
 
     // Create the browser
-    CreateBrowser(CefString());
+    CreateBrowser("about:blank");
   }
 
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE {
@@ -231,48 +227,46 @@ class RequestSendRecvTestHandler : public TestHandler {
     browser->GetMainFrame()->LoadRequest(request_);
   }
 
-  virtual bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
-                              CefRefPtr<CefFrame> frame,
-                              CefRefPtr<CefRequest> request,
-                              NavType navType,
-                              bool isRedirect) OVERRIDE {
-    g_RequestSendRecvTestHandlerHandleBeforeBrowseCalled = true;
-
+  virtual bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
+                                    CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefRequest> request) OVERRIDE {
     // Verify that the request is the same
     VerifyRequestEqual(request_, request, true);
+
+    got_before_resource_load_.yes();
 
     return false;
   }
 
-  virtual bool OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-                                    CefRefPtr<CefRequest> request,
-                                    CefString& redirectUrl,
-                                    CefRefPtr<CefStreamReader>& resourceStream,
-                                    CefRefPtr<CefResponse> response,
-                                    int loadFlags) OVERRIDE {
-    g_RequestSendRecvTestHandlerHandleBeforeResourceLoadCalled = true;
-
+  virtual CefRefPtr<CefResourceHandler> GetResourceHandler(
+      CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+      CefRefPtr<CefRequest> request) OVERRIDE {
     // Verify that the request is the same
     VerifyRequestEqual(request_, request, true);
+
+    got_resource_handler_.yes();
 
     DestroyTest();
 
     // No results
-    return true;
+    return NULL;
   }
 
   CefRefPtr<CefRequest> request_;
+
+  TrackCallback got_before_resource_load_;
+  TrackCallback got_resource_handler_;
 };
+
+}  // namespace
 
 // Verify send and recieve
 TEST(RequestTest, SendRecv) {
-  g_RequestSendRecvTestHandlerHandleBeforeBrowseCalled = false;
-  g_RequestSendRecvTestHandlerHandleBeforeResourceLoadCalled = false;
-
   CefRefPtr<RequestSendRecvTestHandler> handler =
       new RequestSendRecvTestHandler();
   handler->ExecuteTest();
 
-  ASSERT_TRUE(g_RequestSendRecvTestHandlerHandleBeforeBrowseCalled);
-  ASSERT_TRUE(g_RequestSendRecvTestHandlerHandleBeforeResourceLoadCalled);
+  ASSERT_TRUE(handler->got_before_resource_load_);
+  ASSERT_TRUE(handler->got_resource_handler_);
 }

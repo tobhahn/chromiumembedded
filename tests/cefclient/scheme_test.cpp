@@ -1,4 +1,4 @@
-// Copyright (c) 2011 The Chromium Embedded Framework Authors. All rights
+// Copyright (c) 2012 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
@@ -6,7 +6,9 @@
 #include <algorithm>
 #include <string>
 #include "include/cef_browser.h"
+#include "include/cef_callback.h"
 #include "include/cef_frame.h"
+#include "include/cef_resource_handler.h"
 #include "include/cef_response.h"
 #include "include/cef_request.h"
 #include "include/cef_scheme.h"
@@ -20,12 +22,12 @@
 
 
 // Implementation of the schema handler for client:// requests.
-class ClientSchemeHandler : public CefSchemeHandler {
+class ClientSchemeHandler : public CefResourceHandler {
  public:
   ClientSchemeHandler() : offset_(0) {}
 
   virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
-                              CefRefPtr<CefSchemeHandlerCallback> callback)
+                              CefRefPtr<CefCallback> callback)
                               OVERRIDE {
     REQUIRE_IO_THREAD();
 
@@ -82,7 +84,7 @@ class ClientSchemeHandler : public CefSchemeHandler {
 
     if (handled) {
       // Indicate the headers are available.
-      callback->HeadersAvailable();
+      callback->Continue();
       return true;
     }
 
@@ -110,7 +112,7 @@ class ClientSchemeHandler : public CefSchemeHandler {
   virtual bool ReadResponse(void* data_out,
                             int bytes_to_read,
                             int& bytes_read,
-                            CefRefPtr<CefSchemeHandlerCallback> callback)
+                            CefRefPtr<CefCallback> callback)
                             OVERRIDE {
     REQUIRE_IO_THREAD();
 
@@ -146,10 +148,11 @@ class ClientSchemeHandler : public CefSchemeHandler {
 class ClientSchemeHandlerFactory : public CefSchemeHandlerFactory {
  public:
   // Return a new scheme handler instance to handle the request.
-  virtual CefRefPtr<CefSchemeHandler> Create(CefRefPtr<CefBrowser> browser,
-                                             const CefString& scheme_name,
-                                             CefRefPtr<CefRequest> request)
-                                             OVERRIDE {
+  virtual CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
+                                               CefRefPtr<CefFrame> frame,
+                                               const CefString& scheme_name,
+                                               CefRefPtr<CefRequest> request)
+                                               OVERRIDE {
     REQUIRE_IO_THREAD();
     return new ClientSchemeHandler();
   }

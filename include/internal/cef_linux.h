@@ -72,6 +72,33 @@ class CefCriticalSection {
 #define CefWindowHandle cef_window_handle_t
 #define CefCursorHandle cef_cursor_handle_t
 
+struct CefMainArgsTraits {
+  typedef cef_main_args_t struct_type;
+
+  static inline void init(struct_type* s) {}
+  static inline void clear(struct_type* s) {}
+
+  static inline void set(const struct_type* src, struct_type* target,
+      bool copy) {
+    target->argc = src->argc;
+    target->argv = src->argv;
+  }
+};
+
+// Class representing CefExecuteProcess arguments.
+class CefMainArgs : public CefStructBase<CefMainArgsTraits> {
+ public:
+  typedef CefStructBase<CefMainArgsTraits> parent;
+
+  CefMainArgs() : parent() {}
+  explicit CefMainArgs(const cef_main_args_t& r) : parent(r) {}
+  explicit CefMainArgs(const CefMainArgs& r) : parent(r) {}
+  explicit CefMainArgs(int argc, const char** argv) : parent() {
+    this.argc = argc;
+    this.argv = argv;
+  }
+};
+
 struct CefWindowInfoTraits {
   typedef cef_window_info_t struct_type;
 
@@ -80,8 +107,8 @@ struct CefWindowInfoTraits {
 
   static inline void set(const struct_type* src, struct_type* target,
       bool copy) {
-    target->m_Widget = src->m_Widget;
-    target->m_ParentWidget = src->m_ParentWidget;
+    target->widget = src->widget;
+    target->parent_widget = src->parent_widget;
   }
 };
 
@@ -95,24 +122,9 @@ class CefWindowInfo : public CefStructBase<CefWindowInfoTraits> {
   explicit CefWindowInfo(const CefWindowInfo& r) : parent(r) {}
 
   void SetAsChild(CefWindowHandle ParentWidget) {
-    m_ParentWidget = ParentWidget;
+    parent_widget = ParentWidget;
   }
 };
-
-struct CefPrintInfoTraits {
-  typedef cef_print_info_t struct_type;
-
-  static inline void init(struct_type* s) {}
-  static inline void clear(struct_type* s) {}
-
-  static inline void set(const struct_type* src, struct_type* target,
-      bool copy) {
-    target->m_Scale = src->m_Scale;
-  }
-};
-
-// Class representing print context information.
-typedef CefStructBase<CefPrintInfoTraits> CefPrintInfo;
 
 #endif  // OS_LINUX
 

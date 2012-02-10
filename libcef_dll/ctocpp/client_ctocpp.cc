@@ -12,19 +12,9 @@
 
 #include "libcef_dll/ctocpp/client_ctocpp.h"
 #include "libcef_dll/ctocpp/display_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/drag_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/find_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/focus_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/jsdialog_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/keyboard_handler_ctocpp.h"
 #include "libcef_dll/ctocpp/life_span_handler_ctocpp.h"
 #include "libcef_dll/ctocpp/load_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/menu_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/permission_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/print_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/render_handler_ctocpp.h"
 #include "libcef_dll/ctocpp/request_handler_ctocpp.h"
-#include "libcef_dll/ctocpp/v8context_handler_ctocpp.h"
 
 
 // VIRTUAL METHODS - Body may be edited by hand.
@@ -79,136 +69,6 @@ CefRefPtr<CefDisplayHandler> CefClientCToCpp::GetDisplayHandler() {
 
   // Return type: refptr_same
   return CefDisplayHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefFocusHandler> CefClientCToCpp::GetFocusHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_focus_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_focus_handler_t* _retval = struct_->get_focus_handler(struct_);
-
-  // Return type: refptr_same
-  return CefFocusHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefKeyboardHandler> CefClientCToCpp::GetKeyboardHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_keyboard_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_keyboard_handler_t* _retval = struct_->get_keyboard_handler(struct_);
-
-  // Return type: refptr_same
-  return CefKeyboardHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefMenuHandler> CefClientCToCpp::GetMenuHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_menu_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_menu_handler_t* _retval = struct_->get_menu_handler(struct_);
-
-  // Return type: refptr_same
-  return CefMenuHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefPermissionHandler> CefClientCToCpp::GetPermissionHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_permission_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_permission_handler_t* _retval = struct_->get_permission_handler(struct_);
-
-  // Return type: refptr_same
-  return CefPermissionHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefPrintHandler> CefClientCToCpp::GetPrintHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_print_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_print_handler_t* _retval = struct_->get_print_handler(struct_);
-
-  // Return type: refptr_same
-  return CefPrintHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefFindHandler> CefClientCToCpp::GetFindHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_find_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_find_handler_t* _retval = struct_->get_find_handler(struct_);
-
-  // Return type: refptr_same
-  return CefFindHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefJSDialogHandler> CefClientCToCpp::GetJSDialogHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_jsdialog_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_jsdialog_handler_t* _retval = struct_->get_jsdialog_handler(struct_);
-
-  // Return type: refptr_same
-  return CefJSDialogHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefV8ContextHandler> CefClientCToCpp::GetV8ContextHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_v8context_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_v8context_handler_t* _retval = struct_->get_v8context_handler(struct_);
-
-  // Return type: refptr_same
-  return CefV8ContextHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefRenderHandler> CefClientCToCpp::GetRenderHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_render_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_render_handler_t* _retval = struct_->get_render_handler(struct_);
-
-  // Return type: refptr_same
-  return CefRenderHandlerCToCpp::Wrap(_retval);
-}
-
-CefRefPtr<CefDragHandler> CefClientCToCpp::GetDragHandler() {
-  if (CEF_MEMBER_MISSING(struct_, get_drag_handler))
-    return NULL;
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_drag_handler_t* _retval = struct_->get_drag_handler(struct_);
-
-  // Return type: refptr_same
-  return CefDragHandlerCToCpp::Wrap(_retval);
 }
 
 

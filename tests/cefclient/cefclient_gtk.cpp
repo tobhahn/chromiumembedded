@@ -11,9 +11,7 @@
 #include "include/cef_browser.h"
 #include "include/cef_frame.h"
 #include "include/cef_runnable.h"
-#include "cefclient/binding_test.h"
 #include "cefclient/client_handler.h"
-#include "cefclient/extension_test.h"
 #include "cefclient/scheme_test.h"
 #include "cefclient/string_util.h"
 
@@ -46,22 +44,6 @@ gboolean GetTextActivated(GtkWidget* widget) {
   return FALSE;  // Don't stop this message.
 }
 
-// Callback for Debug > JS Binding... menu item.
-gboolean JSBindngActivated(GtkWidget* widget) {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunBindingTest(g_handler->GetBrowser());
-
-  return FALSE;  // Don't stop this message.
-}
-
-// Callback for Debug > JS Extension... menu item.
-gboolean JSExtensionActivated(GtkWidget* widget) {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunExtensionTest(g_handler->GetBrowser());
-
-  return FALSE;  // Don't stop this message.
-}
-
 // Callback for Debug > JS Execute... menu item.
 gboolean JSExecuteActivated(GtkWidget* widget) {
   if (g_handler.get() && g_handler->GetBrowserHwnd())
@@ -90,22 +72,6 @@ gboolean LocalStorageActivated(GtkWidget* widget) {
 gboolean XMLHttpRequestActivated(GtkWidget* widget) {
   if (g_handler.get() && g_handler->GetBrowserHwnd())
     RunXMLHTTPRequestTest(g_handler->GetBrowser());
-
-  return FALSE;  // Don't stop this message.
-}
-
-// Callback for Debug > WebURLRequest... menu item.
-gboolean WebURLRequestActivated(GtkWidget* widget) {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunWebURLRequestTest(g_handler->GetBrowser());
-
-  return FALSE;  // Don't stop this message.
-}
-
-// Callback for Debug > DOM Access... menu item.
-gboolean DOMAccessActivated(GtkWidget* widget) {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunDOMAccessTest(g_handler->GetBrowser());
 
   return FALSE;  // Don't stop this message.
 }
@@ -265,10 +231,6 @@ GtkWidget* CreateMenuBar() {
                G_CALLBACK(GetSourceActivated));
   AddMenuEntry(debug_menu, "Get Text",
                G_CALLBACK(GetTextActivated));
-  AddMenuEntry(debug_menu, "JS Binding",
-               G_CALLBACK(JSBindngActivated));
-  AddMenuEntry(debug_menu, "JS Extension",
-               G_CALLBACK(JSExtensionActivated));
   AddMenuEntry(debug_menu, "JS Execute",
                G_CALLBACK(JSExecuteActivated));
   AddMenuEntry(debug_menu, "Request",
@@ -277,8 +239,6 @@ GtkWidget* CreateMenuBar() {
                G_CALLBACK(LocalStorageActivated));
   AddMenuEntry(debug_menu, "XMLHttpRequest",
                G_CALLBACK(XMLHttpRequestActivated));
-  AddMenuEntry(debug_menu, "DOM Access",
-               G_CALLBACK(DOMAccessActivated));
   AddMenuEntry(debug_menu, "Scheme Handler",
                G_CALLBACK(SchemeHandlerActivated));
   AddMenuEntry(debug_menu, "Popup Window",
@@ -317,6 +277,13 @@ static gboolean HandleFocus(GtkWidget* widget,
 }
 
 int main(int argc, char *argv[]) {
+  CefMainArgs main_args(argc, argv);
+
+  // Execute the secondary process, if any.
+  int exit_code = CefExecuteProcess(main_args);
+  if (exit_code >= 0)
+    return exit_code;
+
   if (!getcwd(szWorkingDir, sizeof (szWorkingDir)))
     return -1;
 
@@ -334,10 +301,7 @@ int main(int argc, char *argv[]) {
   AppGetSettings(settings, app);
 
   // Initialize CEF.
-  CefInitialize(settings, app);
-
-  // Register the V8 extension handler.
-  InitExtensionTest();
+  CefInitialize(main_args, settings, app);
 
   // Register the scheme handler.
   InitSchemeTest();

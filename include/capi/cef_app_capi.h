@@ -46,17 +46,29 @@ extern "C" {
 
 
 ///
-// This function should be called on the main application thread to initialize
-// CEF when the application is started. The |application| parameter may be NULL.
-// A return value of true (1) indicates that it succeeded and false (0)
-// indicates that it failed.
+// This function should be called from the application entry point function to
+// execute a secondary process. It can be used to run secondary processes from
+// the browser client executable (default behavior) or from a separate
+// executable specified by the CefSettings.secondary_executable value. If called
+// for the browser process (identified by no "type" command-line value) it will
+// return immediately with a value of -1. If called for a recognized secondary
+// process it will block until the process should exit and then return the
+// process exit code.
 ///
-CEF_EXPORT int cef_initialize(const struct _cef_settings_t* settings,
-    struct _cef_app_t* application);
+CEF_EXPORT int cef_execute_process(const struct _cef_main_args_t* args);
+
+///
+// This function should be called on the main application thread to initialize
+// the CEF browser process. The |application| parameter may be NULL. A return
+// value of true (1) indicates that it succeeded and false (0) indicates that it
+// failed.
+///
+CEF_EXPORT int cef_initialize(const struct _cef_main_args_t* args,
+    const struct _cef_settings_t* settings, struct _cef_app_t* application);
 
 ///
 // This function should be called on the main application thread to shut down
-// CEF before the application exits.
+// the CEF browser process before the application exits.
 ///
 CEF_EXPORT void cef_shutdown();
 

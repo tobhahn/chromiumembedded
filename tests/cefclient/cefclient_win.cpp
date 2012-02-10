@@ -13,15 +13,10 @@
 #include "include/cef_browser.h"
 #include "include/cef_frame.h"
 #include "include/cef_runnable.h"
-#include "cefclient/binding_test.h"
 #include "cefclient/client_handler.h"
-#include "cefclient/extension_test.h"
-#include "cefclient/osrplugin_test.h"
-#include "cefclient/plugin_test.h"
 #include "cefclient/resource.h"
 #include "cefclient/scheme_test.h"
 #include "cefclient/string_util.h"
-#include "cefclient/uiplugin_test.h"
 
 #define MAX_LOADSTRING 100
 #define MAX_URL_LENGTH  255
@@ -59,6 +54,13 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
 
+  CefMainArgs main_args(hInstance);
+
+  // Execute the secondary process, if any.
+  int exit_code = CefExecuteProcess(main_args);
+  if (exit_code >= 0)
+    return exit_code;
+
   // Retrieve the current working directory.
   if (_getcwd(szWorkingDir, MAX_PATH) == NULL)
     szWorkingDir[0] = 0;
@@ -73,19 +75,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
   AppGetSettings(settings, app);
 
   // Initialize CEF.
-  CefInitialize(settings, app);
-
-  // Register the internal client plugin.
-  InitPluginTest();
-
-  // Register the internal UI client plugin.
-  InitUIPluginTest();
-
-  // Register the internal OSR client plugin.
-  InitOSRPluginTest();
-
-  // Register the V8 extension handler.
-  InitExtensionTest();
+  CefInitialize(main_args, settings, app);
 
   // Register the scheme handler.
   InitSchemeTest();
@@ -440,29 +430,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam,
         if (browser.get())
           RunGetTextTest(browser);
         return 0;
-      case ID_TESTS_JAVASCRIPT_BINDING:  // Test the V8 binding handler
-        if (browser.get())
-          RunBindingTest(browser);
-        return 0;
-      case ID_TESTS_JAVASCRIPT_EXTENSION:  // Test the V8 extension handler
-        if (browser.get())
-          RunExtensionTest(browser);
-        return 0;
-      case ID_TESTS_JAVASCRIPT_PERFORMANCE:  // Test the V8 performance
-        if (browser.get())
-          RunExtensionPerfTest(browser);
-        return 0;
       case ID_TESTS_JAVASCRIPT_EXECUTE:  // Test execution of javascript
         if (browser.get())
           RunJavaScriptExecuteTest(browser);
-        return 0;
-      case ID_TESTS_JAVASCRIPT_INVOKE:
-        if (browser.get())
-          RunJavaScriptInvokeTest(browser);
-        return 0;
-      case ID_TESTS_PLUGIN:  // Test the custom plugin
-        if (browser.get())
-          RunPluginTest(browser);
         return 0;
       case ID_TESTS_POPUP:  // Test a popup window
         if (browser.get())
@@ -479,22 +449,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam,
       case ID_TESTS_SCHEME_HANDLER:  // Test the scheme handler
         if (browser.get())
           RunSchemeTest(browser);
-        return 0;
-      case ID_TESTS_UIAPP:  // Test the UI app
-        if (browser.get())
-          RunUIPluginTest(browser);
-        return 0;
-      case ID_TESTS_OSRAPP:  // Test the OSR app
-        if (browser.get())
-          RunOSRPluginTest(browser, false);
-        return 0;
-      case ID_TESTS_TRANSPARENT_OSRAPP:  // Test the OSR app with transparency
-        if (browser.get())
-          RunOSRPluginTest(browser, true);
-        return 0;
-      case ID_TESTS_DOMACCESS:  // Test DOM access
-        if (browser.get())
-          RunDOMAccessTest(browser);
         return 0;
       case ID_TESTS_LOCALSTORAGE:  // Test localStorage
         if (browser.get())
@@ -524,10 +478,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam,
         if (browser.get())
           RunXMLHTTPRequestTest(browser);
         return 0;
-      case ID_TESTS_WEBURLREQUEST:
-        if (browser.get())
-          RunWebURLRequestTest(browser);
-        return 0;
       case ID_TESTS_ZOOM_IN:
         if (browser.get())
           browser->SetZoomLevel(browser->GetZoomLevel() + 0.5);
@@ -547,14 +497,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam,
       case ID_TESTS_DEVTOOLS_CLOSE:
         if (browser.get())
           browser->CloseDevTools();
-        return 0;
-      case ID_TESTS_MODALDIALOG:
-        if (browser.get())
-          RunModalDialogTest(browser);
-        return 0;
-      case ID_TESTS_GETIMAGE:
-        if (browser.get())
-          RunGetImageTest(browser);
         return 0;
       }
       break;
@@ -651,117 +593,11 @@ void RunTransparentPopupTest(CefRefPtr<CefBrowser> browser) {
   // Initialize window info to the defaults for a popup window
   info.SetAsPopup(NULL, "TransparentPopup");
   info.SetTransparentPainting(TRUE);
-  info.m_nWidth = 500;
-  info.m_nHeight = 500;
+  info.width = 500;
+  info.height = 500;
 
   // Creat the popup browser window
   CefBrowser::CreateBrowser(info,
       static_cast<CefRefPtr<CefClient> >(g_handler),
       "http://tests/transparency", settings);
-}
-
-namespace {
-
-// Determine a temporary path for the bitmap file.
-bool GetBitmapTempPath(LPWSTR szTempName) {
-  DWORD dwRetVal;
-  DWORD dwBufSize = 512;
-  TCHAR lpPathBuffer[512];
-  UINT uRetVal;
-
-  dwRetVal = GetTempPath(dwBufSize,      // length of the buffer
-                         lpPathBuffer);  // buffer for path
-  if (dwRetVal > dwBufSize || (dwRetVal == 0))
-    return false;
-
-  // Create a temporary file.
-  uRetVal = GetTempFileName(lpPathBuffer,  // directory for tmp files
-                            L"image",      // temp file name prefix
-                            0,             // create unique name
-                            szTempName);   // buffer for name
-  if (uRetVal == 0)
-    return false;
-
-  size_t len = wcslen(szTempName);
-  wcscpy(szTempName + len - 3, L"bmp");
-  return true;
-}
-
-void UIT_RunGetImageTest(CefRefPtr<CefBrowser> browser) {
-  REQUIRE_UI_THREAD();
-
-  int width, height;
-  bool success = false;
-
-  // Retrieve the image size.
-  if (browser->GetSize(PET_VIEW, width, height)) {
-    void* bits;
-
-    // Populate the bitmap info header.
-    BITMAPINFOHEADER info;
-    info.biSize = sizeof(BITMAPINFOHEADER);
-    info.biWidth = width;
-    info.biHeight = -height;  // minus means top-down bitmap
-    info.biPlanes = 1;
-    info.biBitCount = 32;
-    info.biCompression = BI_RGB;  // no compression
-    info.biSizeImage = 0;
-    info.biXPelsPerMeter = 1;
-    info.biYPelsPerMeter = 1;
-    info.biClrUsed = 0;
-    info.biClrImportant = 0;
-
-    // Create the bitmap and retrieve the bit buffer.
-    HDC screen_dc = GetDC(NULL);
-    HBITMAP bitmap =
-        CreateDIBSection(screen_dc, reinterpret_cast<BITMAPINFO*>(&info),
-                         DIB_RGB_COLORS, &bits, NULL, 0);
-    ReleaseDC(NULL, screen_dc);
-
-    // Read the image into the bit buffer.
-    if (bitmap && browser->GetImage(PET_VIEW, width, height, bits)) {
-      // Populate the bitmap file header.
-      BITMAPFILEHEADER file;
-      file.bfType = 0x4d42;
-      file.bfSize = sizeof(BITMAPFILEHEADER);
-      file.bfReserved1 = 0;
-      file.bfReserved2 = 0;
-      file.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-
-      TCHAR temp_path[512];
-      if (GetBitmapTempPath(temp_path)) {
-        // Write the bitmap to file.
-        HANDLE file_handle =
-            CreateFile(temp_path, GENERIC_WRITE, 0, 0, CREATE_ALWAYS,
-                       FILE_ATTRIBUTE_NORMAL, 0);
-        if (file_handle != INVALID_HANDLE_VALUE) {
-          DWORD bytes_written = 0;
-          WriteFile(file_handle, &file, sizeof(file), &bytes_written, 0);
-          WriteFile(file_handle, &info, sizeof(info), &bytes_written, 0);
-          WriteFile(file_handle, bits, width * height * 4, &bytes_written, 0);
-
-          CloseHandle(file_handle);
-
-          // Open the bitmap in the default viewer.
-          ShellExecute(NULL, L"open", temp_path, NULL, NULL, SW_SHOWNORMAL);
-          success = true;
-        }
-      }
-    }
-
-    DeleteObject(bitmap);
-  }
-
-  if (!success) {
-    browser->GetMainFrame()->ExecuteJavaScript(
-        "alert('Failed to create image!');",
-        browser->GetMainFrame()->GetURL(), 0);
-  }
-}
-
-}  // namespace
-
-void RunGetImageTest(CefRefPtr<CefBrowser> browser) {
-  // Execute the test function on the UI thread.
-  CefPostTask(TID_UI, NewCefRunnableFunction(UIT_RunGetImageTest, browser));
 }

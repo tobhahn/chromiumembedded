@@ -11,16 +11,17 @@
 //
 
 #include "libcef_dll/cpptoc/browser_cpptoc.h"
+#include "libcef_dll/cpptoc/frame_cpptoc.h"
 #include "libcef_dll/cpptoc/request_cpptoc.h"
-#include "libcef_dll/ctocpp/scheme_handler_ctocpp.h"
+#include "libcef_dll/ctocpp/resource_handler_ctocpp.h"
 #include "libcef_dll/ctocpp/scheme_handler_factory_ctocpp.h"
 
 
 // VIRTUAL METHODS - Body may be edited by hand.
 
-CefRefPtr<CefSchemeHandler> CefSchemeHandlerFactoryCToCpp::Create(
-    CefRefPtr<CefBrowser> browser, const CefString& scheme_name,
-    CefRefPtr<CefRequest> request) {
+CefRefPtr<CefResourceHandler> CefSchemeHandlerFactoryCToCpp::Create(
+    CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+    const CefString& scheme_name, CefRefPtr<CefRequest> request) {
   if (CEF_MEMBER_MISSING(struct_, create))
     return NULL;
 
@@ -29,6 +30,10 @@ CefRefPtr<CefSchemeHandler> CefSchemeHandlerFactoryCToCpp::Create(
   // Verify param: browser; type: refptr_diff
   DCHECK(browser.get());
   if (!browser.get())
+    return NULL;
+  // Verify param: frame; type: refptr_diff
+  DCHECK(frame.get());
+  if (!frame.get())
     return NULL;
   // Verify param: scheme_name; type: string_byref_const
   DCHECK(!scheme_name.empty());
@@ -40,13 +45,14 @@ CefRefPtr<CefSchemeHandler> CefSchemeHandlerFactoryCToCpp::Create(
     return NULL;
 
   // Execute
-  cef_scheme_handler_t* _retval = struct_->create(struct_,
+  cef_resource_handler_t* _retval = struct_->create(struct_,
       CefBrowserCppToC::Wrap(browser),
+      CefFrameCppToC::Wrap(frame),
       scheme_name.GetStruct(),
       CefRequestCppToC::Wrap(request));
 
   // Return type: refptr_same
-  return CefSchemeHandlerCToCpp::Wrap(_retval);
+  return CefResourceHandlerCToCpp::Wrap(_retval);
 }
 
 

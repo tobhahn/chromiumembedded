@@ -56,10 +56,11 @@ typedef struct _cef_display_handler_t {
   cef_base_t base;
 
   ///
-  // Called when the navigation state has changed.
+  // Called when the loading state has changed.
   ///
-  void (CEF_CALLBACK *on_nav_state_change)(struct _cef_display_handler_t* self,
-      struct _cef_browser_t* browser, int canGoBack, int canGoForward);
+  void (CEF_CALLBACK *on_loading_state_change)(
+      struct _cef_display_handler_t* self, struct _cef_browser_t* browser,
+      int isLoading, int canGoBack, int canGoForward);
 
   ///
   // Called when a frame's address has changed.
@@ -67,13 +68,6 @@ typedef struct _cef_display_handler_t {
   void (CEF_CALLBACK *on_address_change)(struct _cef_display_handler_t* self,
       struct _cef_browser_t* browser, struct _cef_frame_t* frame,
       const cef_string_t* url);
-
-  ///
-  // Called when the size of the content area has changed.
-  ///
-  void (CEF_CALLBACK *on_contents_size_change)(
-      struct _cef_display_handler_t* self, struct _cef_browser_t* browser,
-      struct _cef_frame_t* frame, int width, int height);
 
   ///
   // Called when the page title changes.

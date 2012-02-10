@@ -36,16 +36,6 @@ class CefClientCToCpp
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE;
   virtual CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE;
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE;
-  virtual CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE;
-  virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE;
-  virtual CefRefPtr<CefMenuHandler> GetMenuHandler() OVERRIDE;
-  virtual CefRefPtr<CefPermissionHandler> GetPermissionHandler() OVERRIDE;
-  virtual CefRefPtr<CefPrintHandler> GetPrintHandler() OVERRIDE;
-  virtual CefRefPtr<CefFindHandler> GetFindHandler() OVERRIDE;
-  virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() OVERRIDE;
-  virtual CefRefPtr<CefV8ContextHandler> GetV8ContextHandler() OVERRIDE;
-  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE;
-  virtual CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE;
 };
 
 #endif  // BUILDING_CEF_SHARED

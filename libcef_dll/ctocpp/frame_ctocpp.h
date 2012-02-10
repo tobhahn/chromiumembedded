@@ -22,14 +22,10 @@
 #include "include/capi/cef_frame_capi.h"
 #include "include/cef_browser.h"
 #include "include/capi/cef_browser_capi.h"
-#include "include/cef_dom.h"
-#include "include/capi/cef_dom_capi.h"
 #include "include/cef_request.h"
 #include "include/capi/cef_request_capi.h"
 #include "include/cef_stream.h"
 #include "include/capi/cef_stream_capi.h"
-#include "include/cef_v8.h"
-#include "include/capi/cef_v8_capi.h"
 #include "libcef_dll/ctocpp/ctocpp.h"
 
 // Wrap a C structure with a C++ class.
@@ -42,6 +38,7 @@ class CefFrameCToCpp
   virtual ~CefFrameCToCpp() {}
 
   // CefFrame methods
+  virtual bool IsValid() OVERRIDE;
   virtual void Undo() OVERRIDE;
   virtual void Redo() OVERRIDE;
   virtual void Cut() OVERRIDE;
@@ -51,13 +48,11 @@ class CefFrameCToCpp
   virtual void SelectAll() OVERRIDE;
   virtual void Print() OVERRIDE;
   virtual void ViewSource() OVERRIDE;
-  virtual CefString GetSource() OVERRIDE;
-  virtual CefString GetText() OVERRIDE;
+  virtual void GetSource(CefRefPtr<CefStringVisitor> visitor) OVERRIDE;
+  virtual void GetText(CefRefPtr<CefStringVisitor> visitor) OVERRIDE;
   virtual void LoadRequest(CefRefPtr<CefRequest> request) OVERRIDE;
   virtual void LoadURL(const CefString& url) OVERRIDE;
   virtual void LoadString(const CefString& string_val,
-      const CefString& url) OVERRIDE;
-  virtual void LoadStream(CefRefPtr<CefStreamReader> stream,
       const CefString& url) OVERRIDE;
   virtual void ExecuteJavaScript(const CefString& jsCode,
       const CefString& scriptUrl, int startLine) OVERRIDE;
@@ -68,8 +63,6 @@ class CefFrameCToCpp
   virtual CefRefPtr<CefFrame> GetParent() OVERRIDE;
   virtual CefString GetURL() OVERRIDE;
   virtual CefRefPtr<CefBrowser> GetBrowser() OVERRIDE;
-  virtual void VisitDOM(CefRefPtr<CefDOMVisitor> visitor) OVERRIDE;
-  virtual CefRefPtr<CefV8Context> GetV8Context() OVERRIDE;
 };
 
 #endif  // USING_CEF_SHARED

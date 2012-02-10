@@ -47,6 +47,14 @@ extern "C" {
 #define cef_cursor_handle_t void*
 
 ///
+// Structure representing CefExecuteProcess arguments.
+///
+typedef struct _cef_main_args_t {
+  int argc;
+  const char** argv;
+} cef_main_args_t;
+
+///
 // Supported graphics implementations.
 ///
 enum cef_graphics_implementation_t {
@@ -59,18 +67,11 @@ enum cef_graphics_implementation_t {
 ///
 typedef struct _cef_window_info_t {
   // Pointer for the parent GtkBox widget.
-  cef_window_handle_t m_ParentWidget;
+  cef_window_handle_t parent_widget;
 
   // Pointer for the new browser widget.
-  cef_window_handle_t m_Widget;
+  cef_window_handle_t widget;
 } cef_window_info_t;
-
-///
-// Class representing print context information.
-///
-typedef struct _cef_print_info_t {
-  double m_Scale;
-} cef_print_info_t;
 
 #ifdef __cplusplus
 }

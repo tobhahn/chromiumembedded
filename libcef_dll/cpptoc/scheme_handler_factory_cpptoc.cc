@@ -10,17 +10,19 @@
 // for more information.
 //
 
-#include "libcef_dll/cpptoc/scheme_handler_cpptoc.h"
+#include "libcef_dll/cpptoc/resource_handler_cpptoc.h"
 #include "libcef_dll/cpptoc/scheme_handler_factory_cpptoc.h"
 #include "libcef_dll/ctocpp/browser_ctocpp.h"
+#include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/request_ctocpp.h"
 
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
 
-struct _cef_scheme_handler_t* CEF_CALLBACK scheme_handler_factory_create(
+cef_resource_handler_t* CEF_CALLBACK scheme_handler_factory_create(
     struct _cef_scheme_handler_factory_t* self, cef_browser_t* browser,
-    const cef_string_t* scheme_name, cef_request_t* request) {
+    cef_frame_t* frame, const cef_string_t* scheme_name,
+    cef_request_t* request) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
@@ -29,6 +31,10 @@ struct _cef_scheme_handler_t* CEF_CALLBACK scheme_handler_factory_create(
   // Verify param: browser; type: refptr_diff
   DCHECK(browser);
   if (!browser)
+    return NULL;
+  // Verify param: frame; type: refptr_diff
+  DCHECK(frame);
+  if (!frame)
     return NULL;
   // Verify param: scheme_name; type: string_byref_const
   DCHECK(scheme_name);
@@ -40,14 +46,15 @@ struct _cef_scheme_handler_t* CEF_CALLBACK scheme_handler_factory_create(
     return NULL;
 
   // Execute
-  CefRefPtr<CefSchemeHandler> _retval = CefSchemeHandlerFactoryCppToC::Get(
+  CefRefPtr<CefResourceHandler> _retval = CefSchemeHandlerFactoryCppToC::Get(
       self)->Create(
       CefBrowserCToCpp::Wrap(browser),
+      CefFrameCToCpp::Wrap(frame),
       CefString(scheme_name),
       CefRequestCToCpp::Wrap(request));
 
   // Return type: refptr_same
-  return CefSchemeHandlerCppToC::Wrap(_retval);
+  return CefResourceHandlerCppToC::Wrap(_retval);
 }
 
 

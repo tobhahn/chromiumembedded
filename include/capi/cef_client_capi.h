@@ -77,66 +77,6 @@ typedef struct _cef_client_t {
   ///
   struct _cef_display_handler_t* (CEF_CALLBACK *get_display_handler)(
       struct _cef_client_t* self);
-
-  ///
-  // Return the handler for focus events.
-  ///
-  struct _cef_focus_handler_t* (CEF_CALLBACK *get_focus_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for keyboard events.
-  ///
-  struct _cef_keyboard_handler_t* (CEF_CALLBACK *get_keyboard_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for context menu events.
-  ///
-  struct _cef_menu_handler_t* (CEF_CALLBACK *get_menu_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for browser permission events.
-  ///
-  struct _cef_permission_handler_t* (CEF_CALLBACK *get_permission_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for printing events.
-  ///
-  struct _cef_print_handler_t* (CEF_CALLBACK *get_print_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for find result events.
-  ///
-  struct _cef_find_handler_t* (CEF_CALLBACK *get_find_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for JavaScript dialog events.
-  ///
-  struct _cef_jsdialog_handler_t* (CEF_CALLBACK *get_jsdialog_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for V8 context events.
-  ///
-  struct _cef_v8context_handler_t* (CEF_CALLBACK *get_v8context_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for off-screen rendering events.
-  ///
-  struct _cef_render_handler_t* (CEF_CALLBACK *get_render_handler)(
-      struct _cef_client_t* self);
-
-  ///
-  // Return the handler for drag events.
-  ///
-  struct _cef_drag_handler_t* (CEF_CALLBACK *get_drag_handler)(
-      struct _cef_client_t* self);
 } cef_client_t;
 
 

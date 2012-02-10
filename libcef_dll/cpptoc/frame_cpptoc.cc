@@ -13,12 +13,24 @@
 #include "libcef_dll/cpptoc/browser_cpptoc.h"
 #include "libcef_dll/cpptoc/frame_cpptoc.h"
 #include "libcef_dll/cpptoc/request_cpptoc.h"
-#include "libcef_dll/cpptoc/stream_reader_cpptoc.h"
-#include "libcef_dll/cpptoc/v8context_cpptoc.h"
-#include "libcef_dll/ctocpp/domvisitor_ctocpp.h"
+#include "libcef_dll/ctocpp/string_visitor_ctocpp.h"
 
 
 // MEMBER FUNCTIONS - Body may be edited by hand.
+
+int CEF_CALLBACK frame_is_valid(struct _cef_frame_t* self) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return 0;
+
+  // Execute
+  bool _retval = CefFrameCppToC::Get(self)->IsValid();
+
+  // Return type: bool
+  return _retval;
+}
 
 void CEF_CALLBACK frame_undo(struct _cef_frame_t* self) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
@@ -119,32 +131,38 @@ void CEF_CALLBACK frame_view_source(struct _cef_frame_t* self) {
   CefFrameCppToC::Get(self)->ViewSource();
 }
 
-cef_string_userfree_t CEF_CALLBACK frame_get_source(struct _cef_frame_t* self) {
+void CEF_CALLBACK frame_get_source(struct _cef_frame_t* self,
+    struct _cef_string_visitor_t* visitor) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
   if (!self)
-    return NULL;
+    return;
+  // Verify param: visitor; type: refptr_diff
+  DCHECK(visitor);
+  if (!visitor)
+    return;
 
   // Execute
-  CefString _retval = CefFrameCppToC::Get(self)->GetSource();
-
-  // Return type: string
-  return _retval.DetachToUserFree();
+  CefFrameCppToC::Get(self)->GetSource(
+      CefStringVisitorCToCpp::Wrap(visitor));
 }
 
-cef_string_userfree_t CEF_CALLBACK frame_get_text(struct _cef_frame_t* self) {
+void CEF_CALLBACK frame_get_text(struct _cef_frame_t* self,
+    struct _cef_string_visitor_t* visitor) {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   DCHECK(self);
   if (!self)
-    return NULL;
+    return;
+  // Verify param: visitor; type: refptr_diff
+  DCHECK(visitor);
+  if (!visitor)
+    return;
 
   // Execute
-  CefString _retval = CefFrameCppToC::Get(self)->GetText();
-
-  // Return type: string
-  return _retval.DetachToUserFree();
+  CefFrameCppToC::Get(self)->GetText(
+      CefStringVisitorCToCpp::Wrap(visitor));
 }
 
 void CEF_CALLBACK frame_load_request(struct _cef_frame_t* self,
@@ -200,28 +218,6 @@ void CEF_CALLBACK frame_load_string(struct _cef_frame_t* self,
   // Execute
   CefFrameCppToC::Get(self)->LoadString(
       CefString(string_val),
-      CefString(url));
-}
-
-void CEF_CALLBACK frame_load_stream(struct _cef_frame_t* self,
-    struct _cef_stream_reader_t* stream, const cef_string_t* url) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return;
-  // Verify param: stream; type: refptr_same
-  DCHECK(stream);
-  if (!stream)
-    return;
-  // Verify param: url; type: string_byref_const
-  DCHECK(url);
-  if (!url)
-    return;
-
-  // Execute
-  CefFrameCppToC::Get(self)->LoadStream(
-      CefStreamReaderCppToC::Unwrap(stream),
       CefString(url));
 }
 
@@ -344,43 +340,12 @@ cef_browser_t* CEF_CALLBACK frame_get_browser(struct _cef_frame_t* self) {
   return CefBrowserCppToC::Wrap(_retval);
 }
 
-void CEF_CALLBACK frame_visit_dom(struct _cef_frame_t* self,
-    cef_domvisitor_t* visitor) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return;
-  // Verify param: visitor; type: refptr_diff
-  DCHECK(visitor);
-  if (!visitor)
-    return;
-
-  // Execute
-  CefFrameCppToC::Get(self)->VisitDOM(
-      CefDOMVisitorCToCpp::Wrap(visitor));
-}
-
-struct _cef_v8context_t* CEF_CALLBACK frame_get_v8context(
-    struct _cef_frame_t* self) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self)
-    return NULL;
-
-  // Execute
-  CefRefPtr<CefV8Context> _retval = CefFrameCppToC::Get(self)->GetV8Context();
-
-  // Return type: refptr_same
-  return CefV8ContextCppToC::Wrap(_retval);
-}
-
 
 // CONSTRUCTOR - Do not edit by hand.
 
 CefFrameCppToC::CefFrameCppToC(CefFrame* cls)
     : CefCppToC<CefFrameCppToC, CefFrame, cef_frame_t>(cls) {
+  struct_.struct_.is_valid = frame_is_valid;
   struct_.struct_.undo = frame_undo;
   struct_.struct_.redo = frame_redo;
   struct_.struct_.cut = frame_cut;
@@ -395,7 +360,6 @@ CefFrameCppToC::CefFrameCppToC(CefFrame* cls)
   struct_.struct_.load_request = frame_load_request;
   struct_.struct_.load_url = frame_load_url;
   struct_.struct_.load_string = frame_load_string;
-  struct_.struct_.load_stream = frame_load_stream;
   struct_.struct_.execute_java_script = frame_execute_java_script;
   struct_.struct_.is_main = frame_is_main;
   struct_.struct_.is_focused = frame_is_focused;
@@ -404,8 +368,6 @@ CefFrameCppToC::CefFrameCppToC(CefFrame* cls)
   struct_.struct_.get_parent = frame_get_parent;
   struct_.struct_.get_url = frame_get_url;
   struct_.struct_.get_browser = frame_get_browser;
-  struct_.struct_.visit_dom = frame_visit_dom;
-  struct_.struct_.get_v8context = frame_get_v8context;
 }
 
 #ifndef NDEBUG

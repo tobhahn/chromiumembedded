@@ -57,6 +57,11 @@ typedef struct _cef_frame_t {
   cef_base_t base;
 
   ///
+  // True if this object is currently attached to a valid frame.
+  ///
+  int (CEF_CALLBACK *is_valid)(struct _cef_frame_t* self);
+
+  ///
   // Execute undo in this frame.
   ///
   void (CEF_CALLBACK *undo)(struct _cef_frame_t* self);
@@ -104,18 +109,18 @@ typedef struct _cef_frame_t {
   void (CEF_CALLBACK *view_source)(struct _cef_frame_t* self);
 
   ///
-  // Returns this frame's HTML source as a string. This function should only be
-  // called on the UI thread.
+  // Retrieve this frame's HTML source as a string sent to the specified
+  // visitor.
   ///
-  // The resulting string must be freed by calling cef_string_userfree_free().
-  cef_string_userfree_t (CEF_CALLBACK *get_source)(struct _cef_frame_t* self);
+  void (CEF_CALLBACK *get_source)(struct _cef_frame_t* self,
+      struct _cef_string_visitor_t* visitor);
 
   ///
-  // Returns this frame's display text as a string. This function should only be
-  // called on the UI thread.
+  // Retrieve this frame's display text as a string sent to the specified
+  // visitor.
   ///
-  // The resulting string must be freed by calling cef_string_userfree_free().
-  cef_string_userfree_t (CEF_CALLBACK *get_text)(struct _cef_frame_t* self);
+  void (CEF_CALLBACK *get_text)(struct _cef_frame_t* self,
+      struct _cef_string_visitor_t* visitor);
 
   ///
   // Load the request represented by the |request| object.
@@ -136,12 +141,6 @@ typedef struct _cef_frame_t {
       const cef_string_t* string_val, const cef_string_t* url);
 
   ///
-  // Load the contents of |stream| with the optional dummy target |url|.
-  ///
-  void (CEF_CALLBACK *load_stream)(struct _cef_frame_t* self,
-      struct _cef_stream_reader_t* stream, const cef_string_t* url);
-
-  ///
   // Execute a string of JavaScript code in this frame. The |script_url|
   // parameter is the URL where the script in question can be found, if any. The
   // renderer may request this URL to show the developer the source of the
@@ -158,8 +157,7 @@ typedef struct _cef_frame_t {
   int (CEF_CALLBACK *is_main)(struct _cef_frame_t* self);
 
   ///
-  // Returns true (1) if this is the focused frame. This function should only be
-  // called on the UI thread.
+  // Returns true (1) if this is the focused frame.
   ///
   int (CEF_CALLBACK *is_focused)(struct _cef_frame_t* self);
 
@@ -174,20 +172,18 @@ typedef struct _cef_frame_t {
   cef_string_userfree_t (CEF_CALLBACK *get_name)(struct _cef_frame_t* self);
 
   ///
-  // Returns the globally unique identifier for this frame. This function should
-  // only be called on the UI thread.
+  // Returns the globally unique identifier for this frame.
   ///
   int64 (CEF_CALLBACK *get_identifier)(struct _cef_frame_t* self);
 
   ///
   // Returns the parent of this frame or NULL if this is the main (top-level)
-  // frame. This function should only be called on the UI thread.
+  // frame.
   ///
   struct _cef_frame_t* (CEF_CALLBACK *get_parent)(struct _cef_frame_t* self);
 
   ///
-  // Returns the URL currently loaded in this frame. This function should only
-  // be called on the UI thread.
+  // Returns the URL currently loaded in this frame.
   ///
   // The resulting string must be freed by calling cef_string_userfree_free().
   cef_string_userfree_t (CEF_CALLBACK *get_url)(struct _cef_frame_t* self);
@@ -196,19 +192,6 @@ typedef struct _cef_frame_t {
   // Returns the browser that this frame belongs to.
   ///
   struct _cef_browser_t* (CEF_CALLBACK *get_browser)(struct _cef_frame_t* self);
-
-  ///
-  // Visit the DOM document.
-  ///
-  void (CEF_CALLBACK *visit_dom)(struct _cef_frame_t* self,
-      struct _cef_domvisitor_t* visitor);
-
-  ///
-  // Get the V8 context associated with the frame. This function should only be
-  // called on the UI thread.
-  ///
-  struct _cef_v8context_t* (CEF_CALLBACK *get_v8context)(
-      struct _cef_frame_t* self);
 } cef_frame_t;
 
 

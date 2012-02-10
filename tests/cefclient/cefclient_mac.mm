@@ -11,9 +11,7 @@
 #include "include/cef_browser.h"
 #include "include/cef_frame.h"
 #include "include/cef_runnable.h"
-#include "cefclient/binding_test.h"
 #include "cefclient/client_handler.h"
-#include "cefclient/extension_test.h"
 #include "cefclient/resource_util.h"
 #include "cefclient/scheme_test.h"
 #include "cefclient/string_util.h"
@@ -189,16 +187,10 @@ NSButton* MakeButton(NSRect* rect, NSString* title, NSView* parent) {
 - (void)createApp:(id)object;
 - (IBAction)testGetSource:(id)sender;
 - (IBAction)testGetText:(id)sender;
-- (IBAction)testJSBinding:(id)sender;
-- (IBAction)testJSExtension:(id)sender;
-- (IBAction)testJSExtensionPerf:(id)sender;
 - (IBAction)testJSExecute:(id)sender;
-- (IBAction)testJSInvoke:(id)sender;
 - (IBAction)testRequest:(id)sender;
 - (IBAction)testLocalStorage:(id)sender;
 - (IBAction)testXMLHttpRequest:(id)sender;
-- (IBAction)testWebURLRequest:(id)sender;
-- (IBAction)testDOMAccess:(id)sender;
 - (IBAction)testSchemeHandler:(id)sender;
 - (IBAction)testPopupWindow:(id)sender;
 - (IBAction)testAccelerated2DCanvas:(id)sender;
@@ -235,20 +227,8 @@ NSButton* MakeButton(NSRect* rect, NSString* title, NSView* parent) {
   [testMenu addItemWithTitle:@"Get Text"
                       action:@selector(testGetText:)
                keyEquivalent:@""];
-  [testMenu addItemWithTitle:@"JavaScript Binding Handler"
-                      action:@selector(testJSBinding:)
-               keyEquivalent:@""];
-  [testMenu addItemWithTitle:@"JavaScript Extension Handler"
-                      action:@selector(testJSExtension:)
-               keyEquivalent:@""];
-  [testMenu addItemWithTitle:@"JavaScript Extension Performance"
-                      action:@selector(testJSExtensionPerf:)
-               keyEquivalent:@""];
   [testMenu addItemWithTitle:@"JavaScript Execute"
                       action:@selector(testJSExecute:)
-               keyEquivalent:@""];
-  [testMenu addItemWithTitle:@"JavaScript Invoke"
-                      action:@selector(testJSInvoke:)
                keyEquivalent:@""];
   [testMenu addItemWithTitle:@"Popup Window"
                       action:@selector(testPopupWindow:)
@@ -264,12 +244,6 @@ NSButton* MakeButton(NSRect* rect, NSString* title, NSView* parent) {
                keyEquivalent:@""];
   [testMenu addItemWithTitle:@"XMLHttpRequest"
                       action:@selector(testXMLHttpRequest:)
-               keyEquivalent:@""];
-  [testMenu addItemWithTitle:@"WebURLRequest"
-                      action:@selector(testWebURLRequest:)
-               keyEquivalent:@""];
-  [testMenu addItemWithTitle:@"DOM Access"
-                      action:@selector(testDOMAccess:)
                keyEquivalent:@""];
   [testMenu addItemWithTitle:@"Accelerated 2D Canvas"
                       action:@selector(testAccelerated2DCanvas:)
@@ -402,34 +376,9 @@ NSButton* MakeButton(NSRect* rect, NSString* title, NSView* parent) {
     RunGetTextTest(g_handler->GetBrowser());
 }
 
-- (IBAction)testJSBinding:(id)sender {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunBindingTest(g_handler->GetBrowser());
-}
-
-- (IBAction)testJSExtension:(id)sender {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunExtensionTest(g_handler->GetBrowser());
-}
-
-- (IBAction)testJSExtensionPerf:(id)sender {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunExtensionPerfTest(g_handler->GetBrowser());
-}
-
 - (IBAction)testJSExecute:(id)sender {
   if (g_handler.get() && g_handler->GetBrowserHwnd())
     RunJavaScriptExecuteTest(g_handler->GetBrowser());
-}
-
-- (IBAction)testJSInvoke:(id)sender {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunJavaScriptInvokeTest(g_handler->GetBrowser());
-}
-
-- (IBAction)testRequest:(id)sender {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunRequestTest(g_handler->GetBrowser());
 }
 
 - (IBAction)testLocalStorage:(id)sender {
@@ -440,16 +389,6 @@ NSButton* MakeButton(NSRect* rect, NSString* title, NSView* parent) {
 - (IBAction)testXMLHttpRequest:(id)sender {
   if (g_handler.get() && g_handler->GetBrowserHwnd())
     RunXMLHTTPRequestTest(g_handler->GetBrowser());
-}
-
-- (IBAction)testWebURLRequest:(id)sender {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunWebURLRequestTest(g_handler->GetBrowser());
-}
-
-- (IBAction)testDOMAccess:(id)sender {
-  if (g_handler.get() && g_handler->GetBrowserHwnd())
-    RunDOMAccessTest(g_handler->GetBrowser());
 }
 
 - (IBAction)testSchemeHandler:(id)sender {
@@ -539,6 +478,13 @@ NSButton* MakeButton(NSRect* rect, NSString* title, NSView* parent) {
 
 
 int main(int argc, char* argv[]) {
+  CefMainArgs main_args(argc, argv);
+
+  // Execute the secondary process, if any.
+  int exit_code = CefExecuteProcess(main_args);
+  if (exit_code >= 0)
+    return exit_code;
+
   // Retrieve the current working directory.
   getcwd(szWorkingDir, sizeof(szWorkingDir));
 
@@ -558,10 +504,9 @@ int main(int argc, char* argv[]) {
   AppGetSettings(settings, app);
 
   // Initialize CEF.
-  CefInitialize(settings, app);
+  CefInitialize(main_args, settings, app);
 
   // Initialize tests.
-  InitExtensionTest();
   InitSchemeTest();
 
   // Create the application delegate and window.

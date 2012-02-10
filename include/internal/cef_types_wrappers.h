@@ -175,25 +175,6 @@ inline bool operator!=(const CefRect& a, const CefRect& b) {
 }
 
 
-struct CefPrintOptionsTraits {
-  typedef cef_print_options_t struct_type;
-
-  static inline void init(struct_type* s) {}
-  static inline void clear(struct_type* s) {}
-
-  static inline void set(const struct_type* src, struct_type* target,
-      bool copy) {
-    *target = *src;
-  }
-};
-
-///
-// Class representing print options.
-///
-typedef CefStructBase<CefPrintOptionsTraits> CefPrintOptions;
-
-
-
 struct CefPopupFeaturesTraits {
   typedef cef_popup_features_t struct_type;
 
@@ -385,15 +366,15 @@ struct CefBrowserSettingsTraits {
     target->databases_disabled = src->databases_disabled;
     target->application_cache_disabled = src->application_cache_disabled;
     target->webgl_disabled = src->webgl_disabled;
-    target->accelerated_compositing_enabled =
-        src->accelerated_compositing_enabled;
+    target->accelerated_compositing_disabled =
+        src->accelerated_compositing_disabled;
     target->threaded_compositing_enabled = src->threaded_compositing_enabled;
     target->accelerated_layers_disabled = src->accelerated_layers_disabled;
     target->accelerated_video_disabled = src->accelerated_video_disabled;
     target->accelerated_2d_canvas_disabled =
         src->accelerated_2d_canvas_disabled;
-    target->accelerated_painting_disabled = src->accelerated_painting_disabled;
-    target->accelerated_filters_disabled = src->accelerated_filters_disabled;
+    target->accelerated_painting_enabled = src->accelerated_painting_enabled;
+    target->accelerated_filters_enabled = src->accelerated_filters_enabled;
     target->accelerated_plugins_disabled = src->accelerated_plugins_disabled;
     target->developer_tools_disabled = src->developer_tools_disabled;
     target->fullscreen_enabled = src->fullscreen_enabled;
@@ -524,52 +505,6 @@ struct CefCookieTraits {
 // Class representing a cookie.
 ///
 typedef CefStructBase<CefCookieTraits> CefCookie;
-
-
-struct CefMenuInfoTraits {
-  typedef cef_menu_info_t struct_type;
-
-  static inline void init(struct_type* s) {}
-
-  static inline void clear(struct_type* s) {
-    cef_string_clear(&s->linkUrl);
-    cef_string_clear(&s->imageUrl);
-    cef_string_clear(&s->pageUrl);
-    cef_string_clear(&s->frameUrl);
-    cef_string_clear(&s->selectionText);
-    cef_string_clear(&s->misspelledWord);
-    cef_string_clear(&s->securityInfo);
-  }
-
-  static inline void set(const struct_type* src, struct_type* target,
-      bool copy) {
-    target->typeFlags = src->typeFlags;
-    target->x = src->x;
-    target->y = src->y;
-
-    cef_string_set(src->linkUrl.str, src->linkUrl.length,
-        &target->linkUrl, copy);
-    cef_string_set(src->imageUrl.str, src->imageUrl.length,
-        &target->imageUrl, copy);
-    cef_string_set(src->pageUrl.str, src->pageUrl.length,
-        &target->pageUrl, copy);
-    cef_string_set(src->frameUrl.str, src->frameUrl.length,
-        &target->frameUrl, copy);
-    cef_string_set(src->selectionText.str, src->selectionText.length,
-        &target->selectionText, copy);
-    cef_string_set(src->misspelledWord.str, src->misspelledWord.length,
-        &target->misspelledWord, copy);
-    cef_string_set(src->securityInfo.str, src->securityInfo.length,
-        &target->securityInfo, copy);
-
-    target->editFlags = src->editFlags;
-  }
-};
-
-///
-// Class representing menu info.
-///
-typedef CefStructBase<CefMenuInfoTraits> CefMenuInfo;
 
 
 struct CefProxyInfoTraits {
